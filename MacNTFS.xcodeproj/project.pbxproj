@@ -15,14 +15,17 @@
 		46F529941FD510D6645EEB32 /* FileManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4094B151B9CCCD0FE76CF5C3 /* FileManagerView.swift */; };
 		4C4891EF82DD00AE48312BEF /* DiskDetectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D5B653F85BE3CBF14C7DEF5 /* DiskDetectionTests.swift */; };
 		5027CDE42208E3DDB4A4FC9D /* HelperProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B70296C8286EB1E11465EC4 /* HelperProtocol.swift */; };
+		55F82D9AA5096D7015912CDD /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3B19188B106439C9006CD22 /* LocalizationManager.swift */; };
 		5F720006E86F991F0199C729 /* FileOperationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 158EDB73C5141CE982BF4F7E /* FileOperationViewModel.swift */; };
 		66A3308DB4F128D1E080A78E /* HelperProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2E5E4D1112CBD1811F6134 /* HelperProtocol.swift */; };
+		779F54BF3CF334EC82326983 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1235EA1DF01E6218BE8FCC0 /* NotificationService.swift */; };
 		77EE27DECFA775B0E2DEF5AF /* NTFSMountService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0E9685186609D503D9A819 /* NTFSMountService.swift */; };
 		78F508529C1F3F9531774DEF /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E37C43ED2E20B787B16FBF /* LogView.swift */; };
 		9BB5E28E3044B309713BC25C /* DiskViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 858AA008694C85D4AA5F207A /* DiskViewModel.swift */; };
 		A300A10F7D4850004A260F3F /* LogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA68C7BFC205B254D4475B3 /* LogService.swift */; };
 		B17C8FC2EB69B85AB5F58571 /* HelperTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F3474DDD2FE944874B42AA9 /* HelperTool.swift */; };
 		C3DED7B3CBE30ABA5061AA96 /* FileOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3911C07547532A9B7BD3D556 /* FileOperation.swift */; };
+		CC0A7F13D23CB069269D583C /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A28F7D7F1468B04D3CFC760 /* OnboardingView.swift */; };
 		D89CCE40349A1DF2A4E4978F /* FileOperationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0A19DF058381BEFF733232 /* FileOperationService.swift */; };
 		DDE657E23AC2D79D0EC1A650 /* PrivilegedHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1257D9D115CBE0A7983553CF /* PrivilegedHelper.swift */; };
 		EFF292ADCF9F4973856C9A85 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086DD3B9BC4CCA448550E240 /* ContentView.swift */; };
@@ -57,12 +60,15 @@
 		4964EA5A06F3E06DD29A57B7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		6B70296C8286EB1E11465EC4 /* HelperProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperProtocol.swift; sourceTree = "<group>"; };
 		858AA008694C85D4AA5F207A /* DiskViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskViewModel.swift; sourceTree = "<group>"; };
+		8A28F7D7F1468B04D3CFC760 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		8D564DA484597D43D2714F73 /* MacNTFSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacNTFSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8D5B653F85BE3CBF14C7DEF5 /* DiskDetectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskDetectionTests.swift; sourceTree = "<group>"; };
 		99AFCD1BEC315EFDF82B541B /* ExternalDisk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalDisk.swift; sourceTree = "<group>"; };
+		B3B19188B106439C9006CD22 /* LocalizationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationManager.swift; sourceTree = "<group>"; };
 		B3E37C43ED2E20B787B16FBF /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
 		B57C320C9FA3567FA779CFA0 /* MacNTFSHelper */ = {isa = PBXFileReference; includeInIndex = 0; path = MacNTFSHelper; sourceTree = BUILT_PRODUCTS_DIR; };
 		CD50FBFE3FD3C08BAE5C5F0A /* DiskDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskDetectionService.swift; sourceTree = "<group>"; };
+		F1235EA1DF01E6218BE8FCC0 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		FC0E9685186609D503D9A819 /* NTFSMountService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NTFSMountService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -73,6 +79,7 @@
 				CD50FBFE3FD3C08BAE5C5F0A /* DiskDetectionService.swift */,
 				2B0A19DF058381BEFF733232 /* FileOperationService.swift */,
 				0CA68C7BFC205B254D4475B3 /* LogService.swift */,
+				F1235EA1DF01E6218BE8FCC0 /* NotificationService.swift */,
 				FC0E9685186609D503D9A819 /* NTFSMountService.swift */,
 			);
 			path = Services;
@@ -150,6 +157,7 @@
 			isa = PBXGroup;
 			children = (
 				0C2E5E4D1112CBD1811F6134 /* HelperProtocol.swift */,
+				B3B19188B106439C9006CD22 /* LocalizationManager.swift */,
 				1257D9D115CBE0A7983553CF /* PrivilegedHelper.swift */,
 				07EAC3A9487EDDBE94CFE977 /* ShellExecutor.swift */,
 			);
@@ -163,6 +171,7 @@
 				0C02E33F42B9931DB8C3CC70 /* DiskListView.swift */,
 				4094B151B9CCCD0FE76CF5C3 /* FileManagerView.swift */,
 				B3E37C43ED2E20B787B16FBF /* LogView.swift */,
+				8A28F7D7F1468B04D3CFC760 /* OnboardingView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -316,10 +325,13 @@
 				D89CCE40349A1DF2A4E4978F /* FileOperationService.swift in Sources */,
 				5F720006E86F991F0199C729 /* FileOperationViewModel.swift in Sources */,
 				66A3308DB4F128D1E080A78E /* HelperProtocol.swift in Sources */,
+				55F82D9AA5096D7015912CDD /* LocalizationManager.swift in Sources */,
 				A300A10F7D4850004A260F3F /* LogService.swift in Sources */,
 				78F508529C1F3F9531774DEF /* LogView.swift in Sources */,
 				34B5A84B5DC43DB4B62481E7 /* MacNTFSApp.swift in Sources */,
 				77EE27DECFA775B0E2DEF5AF /* NTFSMountService.swift in Sources */,
+				779F54BF3CF334EC82326983 /* NotificationService.swift in Sources */,
+				CC0A7F13D23CB069269D583C /* OnboardingView.swift in Sources */,
 				DDE657E23AC2D79D0EC1A650 /* PrivilegedHelper.swift in Sources */,
 				F32D87F0A1E08A75AC1D090F /* ShellExecutor.swift in Sources */,
 			);

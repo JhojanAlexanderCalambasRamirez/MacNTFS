@@ -107,6 +107,7 @@ final class DiskDetectionService: ObservableObject {
         Task { @MainActor in
             self.addOrUpdateDisk(disk)
             LogService.shared.log(.info, "Disk appeared: \(disk.name) (\(disk.fileSystem)) — \(disk.sizeFormatted)")
+            NotificationService.sendDiskConnected(disk)
         }
     }
 
@@ -115,8 +116,10 @@ final class DiskDetectionService: ObservableObject {
               let bsdName = desc[kDADiskDescriptionMediaBSDNameKey as String] as? String else { return }
 
         Task { @MainActor in
+            let name = self.disks.first(where: { $0.id == bsdName })?.name ?? bsdName
             self.disks.removeAll { $0.id == bsdName }
             LogService.shared.log(.info, "Disk removed: \(bsdName)")
+            NotificationService.sendDiskDisconnected(name)
         }
     }
 

@@ -2,14 +2,15 @@ import SwiftUI
 
 struct LogView: View {
     @EnvironmentObject var logService: LogService
+    @EnvironmentObject var loc: LocalizationManager
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Logs")
+                Text(loc.t("logs"))
                     .font(.headline)
                 Spacer()
-                Button("Clear") {
+                Button(loc.t("clear")) {
                     logService.clear()
                 }
                 .buttonStyle(.borderless)
