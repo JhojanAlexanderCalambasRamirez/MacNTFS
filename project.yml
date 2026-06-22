@@ -1,0 +1,54 @@
+name: MacNTFS
+options:
+  bundleIdPrefix: com.macntfs
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+
+targets:
+  MacNTFS:
+    type: application
+    platform: macOS
+    sources:
+      - path: MacNTFS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.macntfs.app
+        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.utilities"
+        INFOPLIST_KEY_CFBundleDisplayName: "MacNTFS"
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_NAME: MacNTFS
+        CODE_SIGN_ENTITLEMENTS: MacNTFS/Resources/MacNTFS.entitlements
+        ENABLE_APP_SANDBOX: NO
+    entitlements:
+      path: MacNTFS/Resources/MacNTFS.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+
+  MacNTFSHelper:
+    type: tool
+    platform: macOS
+    sources:
+      - path: MacNTFSHelper
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.macntfs.helper
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_NAME: MacNTFSHelper
+
+  MacNTFSTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: MacNTFSTests
+    dependencies:
+      - target: MacNTFS
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES

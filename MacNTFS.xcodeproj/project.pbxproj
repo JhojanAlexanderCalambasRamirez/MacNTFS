@@ -1,0 +1,589 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2D3A294586C6A3E3B09897CB /* DiskListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C02E33F42B9931DB8C3CC70 /* DiskListView.swift */; };
+		341217E15B1DDC2632841588 /* DiskDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD50FBFE3FD3C08BAE5C5F0A /* DiskDetectionService.swift */; };
+		34B5A84B5DC43DB4B62481E7 /* MacNTFSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F4E5D715C566DACFD16D25A /* MacNTFSApp.swift */; };
+		3E3E0A8E069BB88A19BD78A6 /* ExternalDisk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99AFCD1BEC315EFDF82B541B /* ExternalDisk.swift */; };
+		46F529941FD510D6645EEB32 /* FileManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4094B151B9CCCD0FE76CF5C3 /* FileManagerView.swift */; };
+		4C4891EF82DD00AE48312BEF /* DiskDetectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D5B653F85BE3CBF14C7DEF5 /* DiskDetectionTests.swift */; };
+		5027CDE42208E3DDB4A4FC9D /* HelperProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B70296C8286EB1E11465EC4 /* HelperProtocol.swift */; };
+		5F720006E86F991F0199C729 /* FileOperationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 158EDB73C5141CE982BF4F7E /* FileOperationViewModel.swift */; };
+		66A3308DB4F128D1E080A78E /* HelperProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2E5E4D1112CBD1811F6134 /* HelperProtocol.swift */; };
+		77EE27DECFA775B0E2DEF5AF /* NTFSMountService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0E9685186609D503D9A819 /* NTFSMountService.swift */; };
+		78F508529C1F3F9531774DEF /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E37C43ED2E20B787B16FBF /* LogView.swift */; };
+		9BB5E28E3044B309713BC25C /* DiskViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 858AA008694C85D4AA5F207A /* DiskViewModel.swift */; };
+		A300A10F7D4850004A260F3F /* LogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA68C7BFC205B254D4475B3 /* LogService.swift */; };
+		B17C8FC2EB69B85AB5F58571 /* HelperTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F3474DDD2FE944874B42AA9 /* HelperTool.swift */; };
+		C3DED7B3CBE30ABA5061AA96 /* FileOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3911C07547532A9B7BD3D556 /* FileOperation.swift */; };
+		D89CCE40349A1DF2A4E4978F /* FileOperationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0A19DF058381BEFF733232 /* FileOperationService.swift */; };
+		DDE657E23AC2D79D0EC1A650 /* PrivilegedHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1257D9D115CBE0A7983553CF /* PrivilegedHelper.swift */; };
+		EFF292ADCF9F4973856C9A85 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086DD3B9BC4CCA448550E240 /* ContentView.swift */; };
+		F32D87F0A1E08A75AC1D090F /* ShellExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07EAC3A9487EDDBE94CFE977 /* ShellExecutor.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A42E3B0B1F003D1EB74211AD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C53C6FA77C1779EC7D3FA0CC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 94FA66CD449DCD766904E451;
+			remoteInfo = MacNTFS;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		07D1D0231825219D57386D47 /* MacNTFS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacNTFS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		07EAC3A9487EDDBE94CFE977 /* ShellExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellExecutor.swift; sourceTree = "<group>"; };
+		086DD3B9BC4CCA448550E240 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		0C02E33F42B9931DB8C3CC70 /* DiskListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskListView.swift; sourceTree = "<group>"; };
+		0C2E5E4D1112CBD1811F6134 /* HelperProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperProtocol.swift; sourceTree = "<group>"; };
+		0CA68C7BFC205B254D4475B3 /* LogService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogService.swift; sourceTree = "<group>"; };
+		1257D9D115CBE0A7983553CF /* PrivilegedHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivilegedHelper.swift; sourceTree = "<group>"; };
+		158EDB73C5141CE982BF4F7E /* FileOperationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOperationViewModel.swift; sourceTree = "<group>"; };
+		1F4E5D715C566DACFD16D25A /* MacNTFSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacNTFSApp.swift; sourceTree = "<group>"; };
+		2B0A19DF058381BEFF733232 /* FileOperationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOperationService.swift; sourceTree = "<group>"; };
+		2F3474DDD2FE944874B42AA9 /* HelperTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperTool.swift; sourceTree = "<group>"; };
+		356F37A1FD04B60FDFA5E8DD /* MacNTFS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacNTFS.entitlements; sourceTree = "<group>"; };
+		3911C07547532A9B7BD3D556 /* FileOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOperation.swift; sourceTree = "<group>"; };
+		4094B151B9CCCD0FE76CF5C3 /* FileManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileManagerView.swift; sourceTree = "<group>"; };
+		6B70296C8286EB1E11465EC4 /* HelperProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperProtocol.swift; sourceTree = "<group>"; };
+		858AA008694C85D4AA5F207A /* DiskViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskViewModel.swift; sourceTree = "<group>"; };
+		8D564DA484597D43D2714F73 /* MacNTFSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacNTFSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8D5B653F85BE3CBF14C7DEF5 /* DiskDetectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskDetectionTests.swift; sourceTree = "<group>"; };
+		99AFCD1BEC315EFDF82B541B /* ExternalDisk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalDisk.swift; sourceTree = "<group>"; };
+		B3E37C43ED2E20B787B16FBF /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
+		B57C320C9FA3567FA779CFA0 /* MacNTFSHelper */ = {isa = PBXFileReference; includeInIndex = 0; path = MacNTFSHelper; sourceTree = BUILT_PRODUCTS_DIR; };
+		CD50FBFE3FD3C08BAE5C5F0A /* DiskDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskDetectionService.swift; sourceTree = "<group>"; };
+		FC0E9685186609D503D9A819 /* NTFSMountService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NTFSMountService.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		602BF8A817CBD875F11D24F2 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				CD50FBFE3FD3C08BAE5C5F0A /* DiskDetectionService.swift */,
+				2B0A19DF058381BEFF733232 /* FileOperationService.swift */,
+				0CA68C7BFC205B254D4475B3 /* LogService.swift */,
+				FC0E9685186609D503D9A819 /* NTFSMountService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		80414B742245A2242D9081D4 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				356F37A1FD04B60FDFA5E8DD /* MacNTFS.entitlements */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		8EFE439C41E9E222163229F3 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				858AA008694C85D4AA5F207A /* DiskViewModel.swift */,
+				158EDB73C5141CE982BF4F7E /* FileOperationViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		952F3ACD54DA6A6215337259 /* MacNTFSTests */ = {
+			isa = PBXGroup;
+			children = (
+				8D5B653F85BE3CBF14C7DEF5 /* DiskDetectionTests.swift */,
+			);
+			path = MacNTFSTests;
+			sourceTree = "<group>";
+		};
+		BD170AE08C0C8EE95DBE151F /* MacNTFSHelper */ = {
+			isa = PBXGroup;
+			children = (
+				6B70296C8286EB1E11465EC4 /* HelperProtocol.swift */,
+				2F3474DDD2FE944874B42AA9 /* HelperTool.swift */,
+			);
+			path = MacNTFSHelper;
+			sourceTree = "<group>";
+		};
+		C43345C209BB8980554E0004 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				99AFCD1BEC315EFDF82B541B /* ExternalDisk.swift */,
+				3911C07547532A9B7BD3D556 /* FileOperation.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		CA935D907142EC79A1E3D85D = {
+			isa = PBXGroup;
+			children = (
+				DAA1B0B6DF372C8E1D7C6B40 /* MacNTFS */,
+				BD170AE08C0C8EE95DBE151F /* MacNTFSHelper */,
+				952F3ACD54DA6A6215337259 /* MacNTFSTests */,
+				FEB1C81D4D3C738BA0BF55FE /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		DAA1B0B6DF372C8E1D7C6B40 /* MacNTFS */ = {
+			isa = PBXGroup;
+			children = (
+				EC392F3878A66FD55A753E15 /* App */,
+				DCF7063F2658F4A227368E65 /* Helpers */,
+				C43345C209BB8980554E0004 /* Models */,
+				80414B742245A2242D9081D4 /* Resources */,
+				602BF8A817CBD875F11D24F2 /* Services */,
+				8EFE439C41E9E222163229F3 /* ViewModels */,
+				DEA07EA8DF8A914BEC4A3831 /* Views */,
+			);
+			path = MacNTFS;
+			sourceTree = "<group>";
+		};
+		DCF7063F2658F4A227368E65 /* Helpers */ = {
+			isa = PBXGroup;
+			children = (
+				0C2E5E4D1112CBD1811F6134 /* HelperProtocol.swift */,
+				1257D9D115CBE0A7983553CF /* PrivilegedHelper.swift */,
+				07EAC3A9487EDDBE94CFE977 /* ShellExecutor.swift */,
+			);
+			path = Helpers;
+			sourceTree = "<group>";
+		};
+		DEA07EA8DF8A914BEC4A3831 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				086DD3B9BC4CCA448550E240 /* ContentView.swift */,
+				0C02E33F42B9931DB8C3CC70 /* DiskListView.swift */,
+				4094B151B9CCCD0FE76CF5C3 /* FileManagerView.swift */,
+				B3E37C43ED2E20B787B16FBF /* LogView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		EC392F3878A66FD55A753E15 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				1F4E5D715C566DACFD16D25A /* MacNTFSApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		FEB1C81D4D3C738BA0BF55FE /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				07D1D0231825219D57386D47 /* MacNTFS.app */,
+				B57C320C9FA3567FA779CFA0 /* MacNTFSHelper */,
+				8D564DA484597D43D2714F73 /* MacNTFSTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		94FA66CD449DCD766904E451 /* MacNTFS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 195DD38CE9DD0B70DB67145D /* Build configuration list for PBXNativeTarget "MacNTFS" */;
+			buildPhases = (
+				C81B272F2FDB2B46E87D1A4F /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MacNTFS;
+			packageProductDependencies = (
+			);
+			productName = MacNTFS;
+			productReference = 07D1D0231825219D57386D47 /* MacNTFS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		AF3A41A04F8BB8108E049DD3 /* MacNTFSHelper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C73BA6F2406F217261540163 /* Build configuration list for PBXNativeTarget "MacNTFSHelper" */;
+			buildPhases = (
+				C22B0FFB40FBFC347150E041 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MacNTFSHelper;
+			packageProductDependencies = (
+			);
+			productName = MacNTFSHelper;
+			productReference = B57C320C9FA3567FA779CFA0 /* MacNTFSHelper */;
+			productType = "com.apple.product-type.tool";
+		};
+		CBA409FD3A0C673277548247 /* MacNTFSTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A0E32E21109F2E1527DB8DB8 /* Build configuration list for PBXNativeTarget "MacNTFSTests" */;
+			buildPhases = (
+				044F5E03D6DF7701659F084F /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BB4F3B8DE7319427101B2F41 /* PBXTargetDependency */,
+			);
+			name = MacNTFSTests;
+			packageProductDependencies = (
+			);
+			productName = MacNTFSTests;
+			productReference = 8D564DA484597D43D2714F73 /* MacNTFSTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C53C6FA77C1779EC7D3FA0CC /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 6BCB2ED74FFE4B7B8D0974DE /* Build configuration list for PBXProject "MacNTFS" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = CA935D907142EC79A1E3D85D;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = FEB1C81D4D3C738BA0BF55FE /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				94FA66CD449DCD766904E451 /* MacNTFS */,
+				AF3A41A04F8BB8108E049DD3 /* MacNTFSHelper */,
+				CBA409FD3A0C673277548247 /* MacNTFSTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		044F5E03D6DF7701659F084F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4C4891EF82DD00AE48312BEF /* DiskDetectionTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C22B0FFB40FBFC347150E041 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5027CDE42208E3DDB4A4FC9D /* HelperProtocol.swift in Sources */,
+				B17C8FC2EB69B85AB5F58571 /* HelperTool.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C81B272F2FDB2B46E87D1A4F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EFF292ADCF9F4973856C9A85 /* ContentView.swift in Sources */,
+				341217E15B1DDC2632841588 /* DiskDetectionService.swift in Sources */,
+				2D3A294586C6A3E3B09897CB /* DiskListView.swift in Sources */,
+				9BB5E28E3044B309713BC25C /* DiskViewModel.swift in Sources */,
+				3E3E0A8E069BB88A19BD78A6 /* ExternalDisk.swift in Sources */,
+				46F529941FD510D6645EEB32 /* FileManagerView.swift in Sources */,
+				C3DED7B3CBE30ABA5061AA96 /* FileOperation.swift in Sources */,
+				D89CCE40349A1DF2A4E4978F /* FileOperationService.swift in Sources */,
+				5F720006E86F991F0199C729 /* FileOperationViewModel.swift in Sources */,
+				66A3308DB4F128D1E080A78E /* HelperProtocol.swift in Sources */,
+				A300A10F7D4850004A260F3F /* LogService.swift in Sources */,
+				78F508529C1F3F9531774DEF /* LogView.swift in Sources */,
+				34B5A84B5DC43DB4B62481E7 /* MacNTFSApp.swift in Sources */,
+				77EE27DECFA775B0E2DEF5AF /* NTFSMountService.swift in Sources */,
+				DDE657E23AC2D79D0EC1A650 /* PrivilegedHelper.swift in Sources */,
+				F32D87F0A1E08A75AC1D090F /* ShellExecutor.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BB4F3B8DE7319427101B2F41 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 94FA66CD449DCD766904E451 /* MacNTFS */;
+			targetProxy = A42E3B0B1F003D1EB74211AD /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		03DC0B68D53B7190A70F528E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.macntfs.helper;
+				PRODUCT_NAME = MacNTFSHelper;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		1701E9134CC8DDB5E18B6ACB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.macntfs.helper;
+				PRODUCT_NAME = MacNTFSHelper;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		4BEAC7DC372B8795B89AEE9F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		63006FD3E9AF3A6FCBAFC478 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = MacNTFS/Resources/MacNTFS.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = MacNTFS;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.macntfs.app;
+				PRODUCT_NAME = MacNTFS;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		76FF0F4A63C54FC84964B602 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		9EDFA1D85400A665337E7D05 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = MacNTFS/Resources/MacNTFS.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = MacNTFS;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.macntfs.app;
+				PRODUCT_NAME = MacNTFS;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		9F1C36DE02835AD8967E1CFB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.macntfs.MacNTFSTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MacNTFS.app/Contents/MacOS/MacNTFS";
+			};
+			name = Release;
+		};
+		FF1C51D3B0A35969E6DA7222 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.macntfs.MacNTFSTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MacNTFS.app/Contents/MacOS/MacNTFS";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		195DD38CE9DD0B70DB67145D /* Build configuration list for PBXNativeTarget "MacNTFS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9EDFA1D85400A665337E7D05 /* Debug */,
+				63006FD3E9AF3A6FCBAFC478 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		6BCB2ED74FFE4B7B8D0974DE /* Build configuration list for PBXProject "MacNTFS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4BEAC7DC372B8795B89AEE9F /* Debug */,
+				76FF0F4A63C54FC84964B602 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A0E32E21109F2E1527DB8DB8 /* Build configuration list for PBXNativeTarget "MacNTFSTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FF1C51D3B0A35969E6DA7222 /* Debug */,
+				9F1C36DE02835AD8967E1CFB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C73BA6F2406F217261540163 /* Build configuration list for PBXNativeTarget "MacNTFSHelper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1701E9134CC8DDB5E18B6ACB /* Debug */,
+				03DC0B68D53B7190A70F528E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = C53C6FA77C1779EC7D3FA0CC /* Project object */;
+}
