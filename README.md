@@ -1,6 +1,12 @@
-# MacNTFS
+<p align="center">
+  <img src="Images/LogoAppMacNTFS.png" alt="MacNTFS Logo" width="150">
+</p>
 
-Native macOS app that enables full read/write support for NTFS-formatted external drives.
+<h1 align="center">MacNTFS</h1>
+
+<p align="center">
+  Native macOS app that enables full read/write support for NTFS-formatted external drives.
+</p>
 
 macOS detects NTFS drives but mounts them as **read-only**. MacNTFS re-mounts them with write support using `ntfs-3g`, so you can copy, move, rename, and delete files — without reformatting.
 

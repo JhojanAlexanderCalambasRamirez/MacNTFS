@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		03C1E290866E5878741776F0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4964EA5A06F3E06DD29A57B7 /* Assets.xcassets */; };
 		2D3A294586C6A3E3B09897CB /* DiskListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C02E33F42B9931DB8C3CC70 /* DiskListView.swift */; };
 		341217E15B1DDC2632841588 /* DiskDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD50FBFE3FD3C08BAE5C5F0A /* DiskDetectionService.swift */; };
 		34B5A84B5DC43DB4B62481E7 /* MacNTFSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F4E5D715C566DACFD16D25A /* MacNTFSApp.swift */; };
@@ -53,6 +54,7 @@
 		356F37A1FD04B60FDFA5E8DD /* MacNTFS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacNTFS.entitlements; sourceTree = "<group>"; };
 		3911C07547532A9B7BD3D556 /* FileOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOperation.swift; sourceTree = "<group>"; };
 		4094B151B9CCCD0FE76CF5C3 /* FileManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileManagerView.swift; sourceTree = "<group>"; };
+		4964EA5A06F3E06DD29A57B7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		6B70296C8286EB1E11465EC4 /* HelperProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperProtocol.swift; sourceTree = "<group>"; };
 		858AA008694C85D4AA5F207A /* DiskViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskViewModel.swift; sourceTree = "<group>"; };
 		8D564DA484597D43D2714F73 /* MacNTFSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacNTFSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -79,6 +81,7 @@
 		80414B742245A2242D9081D4 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				4964EA5A06F3E06DD29A57B7 /* Assets.xcassets */,
 				356F37A1FD04B60FDFA5E8DD /* MacNTFS.entitlements */,
 			);
 			path = Resources;
@@ -190,6 +193,7 @@
 			buildConfigurationList = 195DD38CE9DD0B70DB67145D /* Build configuration list for PBXNativeTarget "MacNTFS" */;
 			buildPhases = (
 				C81B272F2FDB2B46E87D1A4F /* Sources */,
+				2E97C7B3484E095B3F9B8979 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -268,6 +272,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		2E97C7B3484E095B3F9B8979 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				03C1E290866E5878741776F0 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		044F5E03D6DF7701659F084F /* Sources */ = {
