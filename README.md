@@ -74,6 +74,14 @@ Disconnect safely → drive works on Windows exactly the same
 
 #### Option 1: Build from source (developers)
 
+**Prerequisites:** You must have [Xcode](https://apps.apple.com/app/xcode/id497799835) installed from the App Store (not just Command Line Tools). Xcode is Apple's IDE and is required to compile macOS applications. It is free but weighs approximately 7 GB.
+
+1. Open the **App Store** on your Mac
+2. Search for **Xcode** and click **Install**
+3. Wait for the download and installation to complete
+4. Open Xcode once to accept the license agreement
+5. Then run in Terminal:
+
 ```bash
 git clone https://github.com/JhojanAlexanderCalambasRamirez/MacNTFS.git
 cd MacNTFS
@@ -81,22 +89,41 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-The script installs all dependencies (macFUSE + ntfs-3g), configures Xcode automatically, builds the app, and optionally copies it to `/Applications`.
+The script will:
+- Install macFUSE and ntfs-3g automatically
+- Detect and fix `xcode-select` configuration (switches from Command Line Tools to Xcode.app if needed)
+- Accept Xcode license automatically
+- Build the app
+- Ask if you want to copy it to `/Applications` or Desktop
 
-> **Note:** Requires [Xcode](https://apps.apple.com/app/xcode/id497799835) installed from the App Store. The script handles `xcode-select` configuration and license acceptance automatically.
+> **Important:** If you only have Command Line Tools installed (not Xcode.app), the build will fail. The script detects this and shows clear instructions. Command Line Tools is NOT the same as Xcode — you need the full Xcode from the App Store.
 
-#### Option 2: Download release (end users)
+#### Option 2: Download release (end users) — Recommended
+
+This option does NOT require Xcode, Terminal, or any development tools.
 
 1. Go to [Releases](https://github.com/JhojanAlexanderCalambasRamirez/MacNTFS/releases)
-2. Download the latest `.dmg`
+2. Download the latest `.dmg` file
 3. Open the `.dmg` and drag **MacNTFS** to **Applications**
 4. Open MacNTFS — the guided setup will install dependencies automatically
 
-> **Important — macOS Gatekeeper:** Since the app is not signed with an Apple Developer certificate, macOS may block it on first launch. To open it:
-> - **Right-click** the app → **Open** → Click **Open** in the dialog
-> - Or go to **System Settings → Privacy & Security** → Click **Open Anyway**
->
-> This only needs to be done once.
+**First launch — macOS Gatekeeper:**
+
+Since the app is not signed with an Apple Developer certificate, macOS will block it on first launch. This is normal and safe. Follow these steps:
+
+1. Go to **Applications** folder in Finder
+2. **Right-click** (or Control+click) on **MacNTFS.app** — do NOT double-click
+3. Click **Open** from the context menu
+4. A dialog will appear saying macOS cannot verify the developer → Click **Open**
+5. Done. The app will open normally from now on
+
+If step 4 does not show an "Open" button:
+
+1. Go to **System Settings** → **Privacy & Security**
+2. Scroll down — you will see: "MacNTFS was blocked because..."
+3. Click **Open Anyway**
+4. Enter your admin password
+5. Done. The app will never ask again
 
 ### Requirements
 
@@ -172,6 +199,14 @@ Desconectar de forma segura → el disco funciona en Windows exactamente igual
 
 #### Opción 1: Compilar desde fuente (desarrolladores)
 
+**Requisito previo:** Debes tener [Xcode](https://apps.apple.com/app/xcode/id497799835) instalado desde la App Store (no solo Command Line Tools). Xcode es el IDE de Apple y es necesario para compilar aplicaciones macOS. Es gratuito pero pesa aproximadamente 7 GB.
+
+1. Abrir la **App Store** en tu Mac
+2. Buscar **Xcode** y hacer clic en **Instalar**
+3. Esperar a que termine la descarga e instalación
+4. Abrir Xcode una vez para aceptar el acuerdo de licencia
+5. Luego ejecutar en Terminal:
+
 ```bash
 git clone https://github.com/JhojanAlexanderCalambasRamirez/MacNTFS.git
 cd MacNTFS
@@ -179,22 +214,41 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-El script instala todas las dependencias (macFUSE + ntfs-3g), configura Xcode automáticamente, compila la app y opcionalmente la copia a `/Applications`.
+El script va a:
+- Instalar macFUSE y ntfs-3g automáticamente
+- Detectar y corregir la configuración de `xcode-select` (cambia de Command Line Tools a Xcode.app si es necesario)
+- Aceptar la licencia de Xcode automáticamente
+- Compilar la app
+- Preguntar si quieres copiarla a `/Applications` o al Escritorio
 
-> **Nota:** Requiere [Xcode](https://apps.apple.com/app/xcode/id497799835) instalado desde la App Store. El script configura `xcode-select` y acepta la licencia automáticamente.
+> **Importante:** Si solo tienes Command Line Tools instalado (no Xcode.app), la compilación fallará. El script detecta esto y muestra instrucciones claras. Command Line Tools NO es lo mismo que Xcode — necesitas el Xcode completo desde la App Store.
 
-#### Opción 2: Descargar release (usuarios finales)
+#### Opción 2: Descargar release (usuarios finales) — Recomendado
+
+Esta opción NO requiere Xcode, Terminal, ni herramientas de desarrollo.
 
 1. Ir a [Releases](https://github.com/JhojanAlexanderCalambasRamirez/MacNTFS/releases)
-2. Descargar el último `.dmg`
+2. Descargar el último archivo `.dmg`
 3. Abrir el `.dmg` y arrastrar **MacNTFS** a **Applications**
 4. Abrir MacNTFS — la configuración guiada instalará las dependencias automáticamente
 
-> **Importante — macOS Gatekeeper:** Como la app no está firmada con certificado de Apple Developer, macOS puede bloquearla en la primera ejecución. Para abrirla:
-> - **Click derecho** en la app → **Abrir** → Click en **Abrir** en el diálogo
-> - O ir a **Ajustes del Sistema → Privacidad y Seguridad** → Click en **Abrir de todas formas**
->
-> Esto solo es necesario hacerlo una vez.
+**Primera ejecución — macOS Gatekeeper:**
+
+Como la app no está firmada con certificado de Apple Developer, macOS la bloqueará en la primera ejecución. Esto es normal y seguro. Sigue estos pasos:
+
+1. Ir a la carpeta **Applications** en Finder
+2. **Click derecho** (o Control+click) sobre **MacNTFS.app** — NO hacer doble click
+3. Hacer clic en **Abrir** en el menú contextual
+4. Aparecerá un diálogo diciendo que macOS no puede verificar al desarrollador → Hacer clic en **Abrir**
+5. Listo. La app abrirá normalmente de ahora en adelante
+
+Si en el paso 4 no aparece el botón "Abrir":
+
+1. Ir a **Ajustes del Sistema** → **Privacidad y Seguridad**
+2. Scrollear hacia abajo — verás: "Se bloqueó MacNTFS porque..."
+3. Hacer clic en **Abrir de todas formas**
+4. Ingresar tu contraseña de administrador
+5. Listo. La app no volverá a preguntar
 
 ### Requisitos
 
