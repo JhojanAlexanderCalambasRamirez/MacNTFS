@@ -81,7 +81,9 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-The script installs all dependencies (macFUSE + ntfs-3g), builds the app, and optionally copies it to `/Applications`.
+The script installs all dependencies (macFUSE + ntfs-3g), configures Xcode automatically, builds the app, and optionally copies it to `/Applications`.
+
+> **Note:** Requires [Xcode](https://apps.apple.com/app/xcode/id497799835) installed from the App Store. The script handles `xcode-select` configuration and license acceptance automatically.
 
 #### Option 2: Download release (end users)
 
@@ -89,6 +91,12 @@ The script installs all dependencies (macFUSE + ntfs-3g), builds the app, and op
 2. Download the latest `.dmg`
 3. Open the `.dmg` and drag **MacNTFS** to **Applications**
 4. Open MacNTFS — the guided setup will install dependencies automatically
+
+> **Important — macOS Gatekeeper:** Since the app is not signed with an Apple Developer certificate, macOS may block it on first launch. To open it:
+> - **Right-click** the app → **Open** → Click **Open** in the dialog
+> - Or go to **System Settings → Privacy & Security** → Click **Open Anyway**
+>
+> This only needs to be done once.
 
 ### Requirements
 
@@ -171,7 +179,9 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-El script instala todas las dependencias (macFUSE + ntfs-3g), compila la app y opcionalmente la copia a `/Applications`.
+El script instala todas las dependencias (macFUSE + ntfs-3g), configura Xcode automáticamente, compila la app y opcionalmente la copia a `/Applications`.
+
+> **Nota:** Requiere [Xcode](https://apps.apple.com/app/xcode/id497799835) instalado desde la App Store. El script configura `xcode-select` y acepta la licencia automáticamente.
 
 #### Opción 2: Descargar release (usuarios finales)
 
@@ -179,6 +189,12 @@ El script instala todas las dependencias (macFUSE + ntfs-3g), compila la app y o
 2. Descargar el último `.dmg`
 3. Abrir el `.dmg` y arrastrar **MacNTFS** a **Applications**
 4. Abrir MacNTFS — la configuración guiada instalará las dependencias automáticamente
+
+> **Importante — macOS Gatekeeper:** Como la app no está firmada con certificado de Apple Developer, macOS puede bloquearla en la primera ejecución. Para abrirla:
+> - **Click derecho** en la app → **Abrir** → Click en **Abrir** en el diálogo
+> - O ir a **Ajustes del Sistema → Privacidad y Seguridad** → Click en **Abrir de todas formas**
+>
+> Esto solo es necesario hacerlo una vez.
 
 ### Requisitos
 

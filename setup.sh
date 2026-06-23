@@ -44,11 +44,34 @@ fi
 
 # 5. Check Xcode
 if ! command -v xcodebuild &> /dev/null; then
-    echo -e "${RED}ERROR: Xcode required. Install from App Store.${NC}"
-    echo "After installing, run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer"
+    echo -e "${RED}ERROR: Xcode not found. Install from App Store.${NC}"
+    echo "https://apps.apple.com/app/xcode/id497799835"
     exit 1
 fi
-echo -e "${GREEN}✓${NC} Xcode found"
+
+# 5b. Check xcode-select points to Xcode.app (not CommandLineTools)
+XCODE_PATH=$(xcode-select -p 2>/dev/null)
+if [[ "$XCODE_PATH" == */CommandLineTools* ]]; then
+    echo -e "${YELLOW}xcode-select points to CommandLineTools, switching to Xcode.app...${NC}"
+    if [ -d "/Applications/Xcode.app" ]; then
+        sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+        echo -e "${GREEN}✓${NC} Switched to Xcode.app"
+    else
+        echo -e "${RED}ERROR: Xcode.app not found in /Applications/${NC}"
+        echo "Install Xcode from App Store, then run:"
+        echo "  sudo xcode-select -s /Applications/Xcode.app/Contents/Developer"
+        exit 1
+    fi
+else
+    echo -e "${GREEN}✓${NC} Xcode found"
+fi
+
+# 5c. Accept Xcode license if needed
+if ! xcodebuild -checkFirstLaunchStatus &>/dev/null; then
+    echo -e "${YELLOW}Accepting Xcode license (requires admin password)...${NC}"
+    sudo xcodebuild -license accept 2>/dev/null || true
+    sudo xcodebuild -runFirstLaunch 2>/dev/null || true
+fi
 
 # 6. Generate Xcode project
 if command -v xcodegen &> /dev/null; then
@@ -89,10 +112,15 @@ if [ -n "$APP_PATH" ]; then
     fi
 fi
 
+# 9. Note about Gatekeeper
 echo ""
 echo -e "${BOLD}=== Setup Complete ===${NC}"
 echo ""
 echo "Open MacNTFS from Applications or Desktop."
 echo "Connect an NTFS drive and click 'Mount with Write Support'."
+echo ""
+echo -e "${YELLOW}NOTE:${NC} If macOS says the app can't be verified:"
+echo "  Right-click the app → Open → Click 'Open' in the dialog"
+echo "  Or go to: System Settings → Privacy & Security → Click 'Open Anyway'"
 echo ""
 echo -e "Created by Alexander Calambas — ${BOLD}https://github.com/JhojanAlexanderCalambasRamirez${NC}"
