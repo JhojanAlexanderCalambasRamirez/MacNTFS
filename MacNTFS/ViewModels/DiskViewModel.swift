@@ -52,6 +52,10 @@ final class DiskViewModel: ObservableObject {
 
             let mountPoint = try await mountService.mount(disk: disk)
 
+            // Block DA from auto-mounting the NTFS partition while ntfs-3g holds it.
+            // DA cycling forces fuse-t NFS loopback to drop open file handles → Error -43.
+            diskService.claimDisk(disk.id)
+
             let mountedDisk = ExternalDisk(
                 id: disk.id,
                 name: disk.name,
@@ -82,6 +86,9 @@ final class DiskViewModel: ObservableObject {
         guard let mountPoint = disk.mountPoint else { return }
 
         do {
+            // Release DA claim before unmounting so DA can re-detect the partition normally
+            diskService.releaseDisk(disk.id)
+
             if let idx = diskService.disks.firstIndex(where: { $0.id == disk.id }) {
                 diskService.disks[idx].status = .unmounting
             }
