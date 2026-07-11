@@ -157,8 +157,8 @@ struct DiskDetailView: View {
                 }
             }
 
-            if disk.isNTFS {
-                VStack(spacing: 10) {
+            VStack(spacing: 10) {
+                if disk.isNTFS && disk.status != .mounted && disk.status != .ejecting {
                     Button {
                         Task { await diskVM.mountWithWriteSupport(disk) }
                     } label: {
@@ -168,15 +168,25 @@ struct DiskDetailView: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
                     .disabled(diskVM.isMounting)
+                }
 
-                    if diskVM.isMounting {
-                        HStack(spacing: 6) {
-                            ProgressView()
-                                .scaleEffect(0.7)
-                            Text(loc.t("mounting"))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
+                Button {
+                    Task { await diskVM.ejectDisk(disk) }
+                } label: {
+                    Label(loc.t("eject.safe"), systemImage: "eject.fill")
+                        .frame(minWidth: 200)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .disabled(diskVM.isMounting)
+
+                if diskVM.isMounting {
+                    HStack(spacing: 6) {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                        Text(disk.status == .ejecting ? loc.t("ejecting") : loc.t("mounting"))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                 }
             }

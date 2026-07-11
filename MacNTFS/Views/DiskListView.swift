@@ -21,6 +21,7 @@ struct DiskListView: View {
                     ForEach(diskVM.otherDisks) { disk in
                         DiskCardView(disk: disk)
                             .tag(disk)
+                            .contextMenu { otherDiskContextMenu(disk) }
                     }
                 }
             }
@@ -50,7 +51,7 @@ struct DiskListView: View {
 
     @ViewBuilder
     private func diskContextMenu(_ disk: ExternalDisk) -> some View {
-        if disk.isNTFS && disk.status != .mounted {
+        if disk.isNTFS && disk.status != .mounted && disk.status != .ejecting {
             Button {
                 Task { await diskVM.mountWithWriteSupport(disk) }
             } label: {
@@ -61,9 +62,8 @@ struct DiskListView: View {
             Button {
                 Task { await diskVM.unmountDisk(disk) }
             } label: {
-                Label(loc.t("unmount"), systemImage: "eject.fill")
+                Label(loc.t("unmount"), systemImage: "arrow.uturn.backward.circle")
             }
-            Divider()
             Button {
                 if let mp = disk.mountPoint {
                     NSWorkspace.shared.open(URL(fileURLWithPath: mp))
@@ -71,7 +71,24 @@ struct DiskListView: View {
             } label: {
                 Label(loc.t("open.finder"), systemImage: "folder.badge.person.crop")
             }
+            Divider()
         }
+        ejectContextButton(disk)
+    }
+
+    @ViewBuilder
+    private func otherDiskContextMenu(_ disk: ExternalDisk) -> some View {
+        ejectContextButton(disk)
+    }
+
+    @ViewBuilder
+    private func ejectContextButton(_ disk: ExternalDisk) -> some View {
+        Button(role: .destructive) {
+            Task { await diskVM.ejectDisk(disk) }
+        } label: {
+            Label(loc.t("eject.safe"), systemImage: "eject.fill")
+        }
+        .disabled(disk.status == .ejecting || disk.status == .mounting || disk.status == .unmounting)
     }
 }
 
@@ -112,7 +129,7 @@ struct DiskCardView: View {
 
                 Spacer()
 
-                if disk.status == .mounting || disk.status == .unmounting {
+                if disk.status == .mounting || disk.status == .unmounting || disk.status == .ejecting {
                     ProgressView()
                         .scaleEffect(0.65)
                 }
@@ -169,7 +186,7 @@ struct DiskCardView: View {
         case .mounted: return "externaldrive.fill.badge.checkmark"
         case .readOnly: return "externaldrive.badge.minus"
         case .error: return "externaldrive.badge.xmark"
-        case .mounting, .unmounting: return "externaldrive.fill"
+        case .mounting, .unmounting, .ejecting: return "externaldrive.fill"
         case .detected: return "externaldrive"
         }
     }
@@ -179,6 +196,7 @@ struct DiskCardView: View {
         case .mounted: return .green
         case .readOnly: return .orange
         case .error: return .red
+        case .ejecting: return .purple
         default: return .secondary
         }
     }

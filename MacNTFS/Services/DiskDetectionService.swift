@@ -230,9 +230,10 @@ final class DiskDetectionService: ObservableObject {
         )
 
         Task { @MainActor in
-            // Don't reset state for a mounted volume (BSD name may differ after fuse-t cycling)
+            // Don't reset state for a mounted or in-flight disk
             let alreadyMounted = self.disks.contains(where: {
-                ($0.id == disk.id || $0.name == disk.name) && $0.status == .mounted
+                ($0.id == disk.id || $0.name == disk.name) &&
+                ($0.status == .mounted || $0.status == .ejecting)
             })
             if alreadyMounted { return }
             self.addOrUpdateDisk(disk)

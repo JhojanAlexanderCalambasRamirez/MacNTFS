@@ -6,6 +6,7 @@ enum DiskStatus: String, Sendable {
     case mounted = "Mounted (R/W)"
     case readOnly = "Read Only"
     case unmounting = "Unmounting..."
+    case ejecting = "Ejecting..."
     case error = "Error"
 }
 

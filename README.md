@@ -35,10 +35,11 @@ MacNTFS re-mounts NTFS drives with full write support using `ntfs-3g` and `FUSE-
 
 | Feature | Description |
 |---------|-------------|
-| **Auto-detection** | Detects external drives instantly when connected via USB or hub |
+| **Auto-detection on launch** | Detects already-connected drives when the app opens — no plug/unplug required |
 | **NTFS identification** | Identifies filesystem type and highlights NTFS drives with visual status |
 | **One-click R/W mount** | Re-mounts NTFS drives with full write support via ntfs-3g + FUSE-T |
-| **Stable mount state** | Tolerant of macOS DiskArbitration cycling — mounted status persists in UI |
+| **Safe Eject** | Ejects any external drive safely from the app — bypasses Finder's missing eject button for NFS-mounted volumes |
+| **Stable mount state** | Tolerant of macOS DiskArbitration cycling — mounted status persists across app restarts |
 | **Native notifications** | macOS notifications when drives connect or disconnect |
 | **Live logs** | Real-time operation log panel with copy-to-clipboard |
 | **Dark mode** | Full support for System, Light, and Dark themes |
@@ -146,7 +147,7 @@ Test mount (replace `diskXsY` with your actual disk identifier from `diskutil li
 sudo diskutil unmount force /dev/diskXsY
 sudo mkdir -p /Volumes/NTFSTEST
 sudo /opt/homebrew/bin/ntfs-3g /dev/diskXsY /Volumes/NTFSTEST \
-  -o local,allow_other,auto_xattr,big_writes,noatime,remove_hiberfile
+  -o allow_other,big_writes,noatime,remove_hiberfile,nolocal
 mount | grep NTFSTEST   # Should show: fuse-t:/... (nfs)
 echo "write test" > /Volumes/NTFSTEST/test.txt && echo "WRITE OK"
 ```
@@ -266,7 +267,10 @@ The disk disconnected between DA detection and the mount attempt. Click Mount ag
 Likely a permissions issue with Full Disk Access (Step 5). Also verify the NOPASSWD sudoers entries (Step 4).
 
 **Drive appears mounted in terminal but Finder doesn't show it**
-Fuse-T mounts appear as NFS volumes. Open Finder → Go → Go to Folder → type `/Volumes/DRIVENAME`.
+FUSE-T mounts appear as NFS volumes. Open Finder → Go → Go to Folder → type `/Volumes/DRIVENAME`. Use the **Safely Eject** button in MacNTFS instead of Finder for ejection.
+
+**Finder doesn't show an Eject button for the drive**
+Expected — FUSE-T mounts are NFS loopback volumes; Finder may not list them in the sidebar. Use **Safely Eject** in MacNTFS (right-click the disk card or the Eject button in the detail panel).
 
 ---
 
@@ -286,10 +290,11 @@ MacNTFS re-monta discos NTFS con soporte completo de escritura usando `ntfs-3g` 
 
 | Funcionalidad | Descripción |
 |---------------|-------------|
-| **Detección automática** | Detecta discos externos al instante cuando se conectan por USB o hub |
+| **Detección al abrir la app** | Detecta discos ya conectados al abrir la app — sin necesidad de desconectar y reconectar |
 | **Identificación NTFS** | Identifica el tipo de sistema de archivos y resalta discos NTFS con estado visual |
 | **Montaje R/W con un clic** | Re-monta discos NTFS con soporte completo de escritura vía ntfs-3g + FUSE-T |
-| **Estado estable** | Tolerante al ciclo de DiskArbitration — el estado "montado" persiste en la UI |
+| **Expulsión segura** | Expulsa cualquier disco externo de forma segura desde la app — soluciona el problema de Finder que no muestra el botón de expulsión para volúmenes NFS |
+| **Estado estable** | Tolerante al ciclo de DiskArbitration — el estado "montado" persiste entre reinicios de la app |
 | **Notificaciones nativas** | Notificaciones de macOS al conectar o desconectar discos |
 | **Logs en tiempo real** | Panel de registro con botón de copiar al portapapeles |
 | **Modo oscuro** | Soporte completo para temas Sistema, Claro y Oscuro |
@@ -397,7 +402,7 @@ Prueba de montaje (reemplaza `diskXsY` con tu identificador real de `diskutil li
 sudo diskutil unmount force /dev/diskXsY
 sudo mkdir -p /Volumes/NTFSTEST
 sudo /opt/homebrew/bin/ntfs-3g /dev/diskXsY /Volumes/NTFSTEST \
-  -o local,allow_other,auto_xattr,big_writes,noatime,remove_hiberfile
+  -o allow_other,big_writes,noatime,remove_hiberfile,nolocal
 mount | grep NTFSTEST   # Debe mostrar: fuse-t:/... (nfs)
 echo "prueba escritura" > /Volumes/NTFSTEST/test.txt && echo "ESCRITURA OK"
 ```
@@ -489,7 +494,10 @@ El disco se desconectó entre la detección DA y el intento de montaje. Hacer cl
 `diskutil unmount force` se ejecutó pero el dispositivo quedó no disponible. Hacer clic en Montar inmediatamente después de que el disco reaparezca.
 
 **El disco aparece montado en terminal pero Finder no lo muestra**
-FUSE-T monta como volúmenes NFS. Abrir Finder → Ir → Ir a la carpeta → escribir `/Volumes/NOMBRE_DISCO`.
+FUSE-T monta como volúmenes NFS. Abrir Finder → Ir → Ir a la carpeta → escribir `/Volumes/NOMBRE_DISCO`. Usar **Expulsar de forma segura** en MacNTFS en lugar de Finder para expulsar.
+
+**Finder no muestra el botón de expulsión para el disco**
+Es normal — FUSE-T monta volúmenes NFS loopback que Finder puede no listar en la barra lateral. Usar **Expulsar de forma segura** en MacNTFS (click derecho en el disco o botón Expulsar en el panel de detalle).
 
 ---
 

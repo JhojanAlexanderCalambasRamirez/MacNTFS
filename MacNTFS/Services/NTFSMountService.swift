@@ -87,6 +87,32 @@ actor NTFSMountService {
         LogService.shared.log(.info, "Unmounted \(mountPoint)")
     }
 
+    func eject(disk: ExternalDisk) async throws {
+        // Tear down NFS loopback if mounted by ntfs-3g
+        if let mountPoint = disk.mountPoint {
+            _ = await sudo("/sbin/umount", ["-f", mountPoint])
+        }
+        // Kill any remaining ntfs-3g process for this device
+        _ = await sudo("/usr/bin/pkill", ["-9", "-f", "ntfs-3g.*\(disk.devicePath)"])
+        try await Task.sleep(nanoseconds: 500_000_000)
+        // Eject the whole physical disk — diskutil unmounts any remaining macOS volumes first
+        let parent = parentBSDName(disk.id)
+        let (code, output) = await sudo("/usr/sbin/diskutil", ["eject", parent])
+        if code != 0 {
+            throw NTFSError.operationFailed(output.isEmpty ? "diskutil eject exited \(code)" : output)
+        }
+        LogService.shared.log(.info, "Ejected \(disk.name) (\(parent))")
+    }
+
+    private func parentBSDName(_ bsdName: String) -> String {
+        // "disk5s1" → "disk5"; "disk5" → "disk5"
+        guard let lastS = bsdName.lastIndex(of: "s") else { return bsdName }
+        let suffix = bsdName[bsdName.index(after: lastS)...]
+        guard !suffix.isEmpty, suffix.allSatisfy(\.isNumber) else { return bsdName }
+        let parent = String(bsdName[..<lastS])
+        return parent.hasPrefix("disk") ? parent : bsdName
+    }
+
     // MARK: - Private
 
     private func sudo(_ executable: String, _ arguments: [String]) async -> (Int32, String) {
