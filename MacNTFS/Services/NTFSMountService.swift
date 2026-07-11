@@ -30,43 +30,39 @@ actor NTFSMountService {
         }
 
         let mountPoint = "\(mountBase)/\(sanitizeName(disk.name))"
-
-        // Create mount point if needed
-        if !FileManager.default.fileExists(atPath: mountPoint) {
-            try FileManager.default.createDirectory(
-                atPath: mountPoint,
-                withIntermediateDirectories: true
-            )
-        }
-
-        // Unmount existing read-only mount first
-        if disk.mountPoint != nil {
-            try await unmountNative(disk: disk)
-        }
-
-        // Mount with ntfs-3g
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: ntfs3gPath)
-        process.arguments = [
-            disk.devicePath,
-            mountPoint,
-            "-o", "local,allow_other,auto_xattr,volname=\(disk.name)",
-            "-o", "big_writes",    // Better write performance
-            "-o", "noatime",       // Skip access time updates
-        ]
-
-        let errorPipe = Pipe()
-        process.standardError = errorPipe
+        let devicePath = disk.devicePath
 
         LogService.shared.log(.info, "Mounting \(disk.id) at \(mountPoint) with ntfs-3g")
 
-        try process.run()
-        process.waitUntilExit()
+        // Kill any existing ntfs-3g processes
+        _ = await sudo("/usr/bin/pkill", ["-9", "-f", "ntfs-3g"])
+        try await Task.sleep(nanoseconds: 1_000_000_000)
 
-        if process.terminationStatus != 0 {
-            let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
-            let errorMsg = String(data: errorData, encoding: .utf8) ?? "Unknown error"
-            throw NTFSError.mountFailed(errorMsg)
+        // Force unmount existing mount
+        _ = await sudo("/usr/sbin/diskutil", ["unmount", "force", devicePath])
+
+        // Create mount point
+        _ = await sudo("/bin/mkdir", ["-p", mountPoint])
+
+        // Mount with ntfs-3g
+        let (exitCode, output) = await sudo(ntfs3gPath, [
+            devicePath, mountPoint,
+            "-o", "local,allow_other,auto_xattr,big_writes,noatime,remove_hiberfile"
+        ])
+
+        if exitCode != 0 {
+            let msg = output.isEmpty ? "ntfs-3g exited \(exitCode)" : output
+            LogService.shared.log(.error, "Mount error: \(msg)")
+            throw NTFSError.mountFailed(msg)
+        }
+
+        // Give fuse-t time to complete NFS mount
+        try await Task.sleep(nanoseconds: 1_500_000_000)
+
+        // Verify mount
+        let check = await shellOutput("mount | grep '\(mountPoint)'")
+        guard !check.isEmpty else {
+            throw NTFSError.mountFailed("ntfs-3g started but volume not found at \(mountPoint)")
         }
 
         LogService.shared.log(.info, "Successfully mounted \(disk.name) at \(mountPoint)")
@@ -74,41 +70,61 @@ actor NTFSMountService {
     }
 
     func unmount(mountPoint: String) async throws {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/umount")
-        process.arguments = [mountPoint]
-
-        try process.run()
-        process.waitUntilExit()
-
-        if process.terminationStatus != 0 {
-            // Force unmount as fallback
-            let forceProcess = Process()
-            forceProcess.executableURL = URL(fileURLWithPath: "/usr/bin/umount")
-            forceProcess.arguments = ["-f", mountPoint]
-
-            try forceProcess.run()
-            forceProcess.waitUntilExit()
-
-            if forceProcess.terminationStatus != 0 {
-                throw NTFSError.unmountFailed(mountPoint)
-            }
+        let (exitCode, output) = await sudo("/sbin/umount", ["-f", mountPoint])
+        if exitCode != 0 {
+            let msg = output.isEmpty ? "umount exited \(exitCode)" : output
+            LogService.shared.log(.error, "Unmount error: \(msg)")
+            throw NTFSError.unmountFailed(mountPoint)
         }
-
         LogService.shared.log(.info, "Unmounted \(mountPoint)")
     }
 
-    private func unmountNative(disk: ExternalDisk) async throws {
-        guard let mountPoint = disk.mountPoint else { return }
+    // MARK: - Private
 
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/sbin/diskutil")
-        process.arguments = ["unmount", disk.devicePath]
+    private func sudo(_ executable: String, _ arguments: [String]) async -> (Int32, String) {
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global().async {
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
+                process.arguments = ["-n", executable] + arguments
 
-        try process.run()
-        process.waitUntilExit()
+                let pipe = Pipe()
+                process.standardOutput = pipe
+                process.standardError = pipe
 
-        LogService.shared.log(.info, "Unmounted native mount at \(mountPoint)")
+                do {
+                    try process.run()
+                    process.waitUntilExit()
+                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                    let out = String(data: data, encoding: .utf8)?
+                        .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                    if !out.isEmpty {
+                        LogService.shared.log(.debug, "[\(URL(fileURLWithPath: executable).lastPathComponent)] \(out)")
+                    }
+                    continuation.resume(returning: (process.terminationStatus, out))
+                } catch {
+                    continuation.resume(returning: (-1, error.localizedDescription))
+                }
+            }
+        }
+    }
+
+    private func shellOutput(_ command: String) async -> String {
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global().async {
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/bin/sh")
+                process.arguments = ["-c", command]
+                let pipe = Pipe()
+                process.standardOutput = pipe
+                try? process.run()
+                process.waitUntilExit()
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                let out = String(data: data, encoding: .utf8)?
+                    .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                continuation.resume(returning: out)
+            }
+        }
     }
 
     private func sanitizeName(_ name: String) -> String {

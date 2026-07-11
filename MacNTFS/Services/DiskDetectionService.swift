@@ -4,6 +4,7 @@ import DiskArbitration
 @MainActor
 final class DiskDetectionService: ObservableObject {
     @Published var disks: [ExternalDisk] = []
+    var mountingDisks: Set<String> = []
 
     private var session: DASession?
     private let queue = DispatchQueue(label: "com.macntfs.diskdetection")
@@ -31,7 +32,6 @@ final class DiskDetectionService: ObservableObject {
 
         let match: CFDictionary = [
             kDADiskDescriptionVolumeMountableKey: true,
-            kDADiskDescriptionMediaRemovableKey: true,
         ] as NSDictionary
 
         DARegisterDiskAppearedCallback(session, match, appearedCallback, selfPtr)
@@ -51,34 +51,41 @@ final class DiskDetectionService: ObservableObject {
     }
 
     private func scanExistingDisks() {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/sbin/diskutil")
-        process.arguments = ["list", "-plist", "external"]
+        Task.detached { [weak self] in
+            guard let self else { return }
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/sbin/diskutil")
+            process.arguments = ["list", "-plist", "external"]
 
-        let pipe = Pipe()
-        process.standardOutput = pipe
+            let pipe = Pipe()
+            process.standardOutput = pipe
 
-        do {
-            try process.run()
-            process.waitUntilExit()
+            do {
+                try process.run()
+                process.waitUntilExit()
 
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            if let plist = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-               let allDisks = plist["AllDisksAndPartitions"] as? [[String: Any]] {
-                for diskInfo in allDisks {
-                    if let partitions = diskInfo["Partitions"] as? [[String: Any]] {
-                        for partition in partitions {
-                            if let disk = parseDiskInfo(partition) {
-                                Task { @MainActor in
-                                    self.addOrUpdateDisk(disk)
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                if let plist = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+                   let allDisks = plist["AllDisksAndPartitions"] as? [[String: Any]] {
+                    for diskInfo in allDisks {
+                        if let partitions = diskInfo["Partitions"] as? [[String: Any]] {
+                            for partition in partitions {
+                                if let disk = self.parseDiskInfo(partition) {
+                                    await MainActor.run { self.addOrUpdateDisk(disk) }
                                 }
+                            }
+                        } else {
+                            if let disk = self.parseDiskInfo(diskInfo) {
+                                await MainActor.run { self.addOrUpdateDisk(disk) }
                             }
                         }
                     }
                 }
+            } catch {
+                await MainActor.run {
+                    LogService.shared.log(.error, "Failed to scan disks: \(error.localizedDescription)")
+                }
             }
-        } catch {
-            LogService.shared.log(.error, "Failed to scan disks: \(error.localizedDescription)")
         }
     }
 
@@ -90,8 +97,19 @@ final class DiskDetectionService: ObservableObject {
         let fsType = desc[kDADiskDescriptionVolumeKindKey as String] as? String ?? "unknown"
         let mediaSize = desc[kDADiskDescriptionMediaSizeKey as String] as? UInt64 ?? 0
         let removable = desc[kDADiskDescriptionMediaRemovableKey as String] as? Bool ?? false
-        let bus = desc[kDADiskDescriptionBusPathKey as String] as? String ?? ""
-        let mountURL = desc[kDADiskDescriptionVolumeMountableKey as String] as? URL
+        let protocol_ = desc[kDADiskDescriptionDeviceProtocolKey as String] as? String ?? ""
+        let mountURL = desc[kDADiskDescriptionVolumePathKey as String] as? URL
+
+        // Skip fuse-t NFS loopback mounts — they're not real external disks
+        guard fsType != "nfs" && fsType != "autofs" else { return }
+
+        let busProtocol: String
+        switch protocol_.lowercased() {
+        case let p where p.contains("usb"): busProtocol = "USB"
+        case let p where p.contains("thunderbolt"): busProtocol = "Thunderbolt"
+        case let p where p.contains("firewire"): busProtocol = "FireWire"
+        default: busProtocol = protocol_.isEmpty ? "USB" : protocol_
+        }
 
         let disk = ExternalDisk(
             id: bsdName,
@@ -101,10 +119,15 @@ final class DiskDetectionService: ObservableObject {
             mountPoint: mountURL?.path,
             status: fsType.lowercased().contains("ntfs") ? .readOnly : .detected,
             isRemovable: removable,
-            busProtocol: bus.contains("USB") ? "USB" : "Thunderbolt"
+            busProtocol: busProtocol
         )
 
         Task { @MainActor in
+            // Don't reset state if this volume is already mounted (BSD name may change during fuse-t cycling)
+            let alreadyMounted = self.disks.contains(where: {
+                ($0.id == disk.id || $0.name == disk.name) && $0.status == .mounted
+            })
+            if alreadyMounted { return }
             self.addOrUpdateDisk(disk)
             LogService.shared.log(.info, "Disk appeared: \(disk.name) (\(disk.fileSystem)) — \(disk.sizeFormatted)")
             NotificationService.sendDiskConnected(disk)
@@ -116,9 +139,16 @@ final class DiskDetectionService: ObservableObject {
               let bsdName = desc[kDADiskDescriptionMediaBSDNameKey as String] as? String else { return }
 
         Task { @MainActor in
-            let name = self.disks.first(where: { $0.id == bsdName })?.name ?? bsdName
+            guard !self.mountingDisks.contains(bsdName) else { return }
+            // Keep mounted/mounting disks in list — fuse-t causes DA cycling on the underlying partition
+            if let existing = self.disks.first(where: { $0.id == bsdName }),
+               existing.status == .mounted || existing.status == .mounting {
+                return
+            }
+            // Only log/notify if the disk was actually tracked
+            guard let name = self.disks.first(where: { $0.id == bsdName })?.name else { return }
             self.disks.removeAll { $0.id == bsdName }
-            LogService.shared.log(.info, "Disk removed: \(bsdName)")
+            LogService.shared.log(.info, "Disk removed: \(name)")
             NotificationService.sendDiskDisconnected(name)
         }
     }
@@ -134,6 +164,7 @@ final class DiskDetectionService: ObservableObject {
     private nonisolated func parseDiskInfo(_ info: [String: Any]) -> ExternalDisk? {
         guard let bsdName = info["DeviceIdentifier"] as? String else { return nil }
         let content = info["Content"] as? String ?? ""
+        guard content != "nfs" && content != "autofs" else { return nil }
         let size = info["Size"] as? UInt64 ?? 0
         let volumeName = info["VolumeName"] as? String ?? "Untitled"
         let mountPoint = info["MountPoint"] as? String

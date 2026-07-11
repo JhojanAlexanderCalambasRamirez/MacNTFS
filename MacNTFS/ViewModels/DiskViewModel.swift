@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import Combine
 
 @MainActor
 final class DiskViewModel: ObservableObject {
@@ -9,6 +10,14 @@ final class DiskViewModel: ObservableObject {
 
     let diskService = DiskDetectionService()
     private let mountService = NTFSMountService.shared
+    private var cancellable: AnyCancellable?
+
+    init() {
+        cancellable = diskService.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+    }
 
     var ntfsDisks: [ExternalDisk] {
         diskService.disks.filter { $0.isNTFS }
@@ -34,6 +43,7 @@ final class DiskViewModel: ObservableObject {
 
         isMounting = true
         errorMessage = nil
+        diskService.mountingDisks.insert(disk.id)
 
         do {
             if let idx = diskService.disks.firstIndex(where: { $0.id == disk.id }) {
@@ -42,17 +52,20 @@ final class DiskViewModel: ObservableObject {
 
             let mountPoint = try await mountService.mount(disk: disk)
 
+            let mountedDisk = ExternalDisk(
+                id: disk.id,
+                name: disk.name,
+                fileSystem: disk.fileSystem,
+                size: disk.size,
+                mountPoint: mountPoint,
+                status: .mounted,
+                isRemovable: disk.isRemovable,
+                busProtocol: disk.busProtocol
+            )
             if let idx = diskService.disks.firstIndex(where: { $0.id == disk.id }) {
-                diskService.disks[idx] = ExternalDisk(
-                    id: disk.id,
-                    name: disk.name,
-                    fileSystem: disk.fileSystem,
-                    size: disk.size,
-                    mountPoint: mountPoint,
-                    status: .mounted,
-                    isRemovable: disk.isRemovable,
-                    busProtocol: disk.busProtocol
-                )
+                diskService.disks[idx] = mountedDisk
+            } else {
+                diskService.disks.append(mountedDisk)
             }
         } catch {
             errorMessage = error.localizedDescription
@@ -61,6 +74,7 @@ final class DiskViewModel: ObservableObject {
             }
         }
 
+        diskService.mountingDisks.remove(disk.id)
         isMounting = false
     }
 

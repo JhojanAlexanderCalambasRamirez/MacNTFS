@@ -10,6 +10,16 @@ struct LogView: View {
                 Text(loc.t("logs"))
                     .font(.headline)
                 Spacer()
+                Button("Copy") {
+                    let text = logService.entries.map { entry in
+                        let ts = ISO8601DateFormatter().string(from: entry.timestamp)
+                        return "[\(ts)] [\(entry.level.rawValue)] \(entry.message)"
+                    }.joined(separator: "\n")
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(text, forType: .string)
+                }
+                .buttonStyle(.borderless)
+                .font(.caption)
                 Button(loc.t("clear")) {
                     logService.clear()
                 }

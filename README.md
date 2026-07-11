@@ -11,9 +11,10 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-macOS%2014%2B-blue" alt="macOS 14+">
+  <img src="https://img.shields.io/badge/macOS%2026%20Tahoe-supported-brightgreen" alt="macOS 26 Tahoe">
   <img src="https://img.shields.io/badge/swift-6.0-orange" alt="Swift 6">
+  <img src="https://img.shields.io/badge/arch-Apple%20Silicon-lightgrey" alt="Apple Silicon">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
-  <img src="https://img.shields.io/badge/arch-Apple%20Silicon%20%7C%20Intel-lightgrey" alt="Architecture">
 </p>
 
 ---
@@ -22,11 +23,13 @@
 
 ### The Problem
 
-macOS detects NTFS-formatted drives (Windows) but mounts them as **read-only**. You can see your files but can't modify, copy to, or delete anything. The alternatives are reformatting the drive (losing all data) or buying expensive commercial software.
+macOS detects NTFS-formatted drives (Windows) but mounts them as **read-only**. You can see your files but cannot modify, copy to, or delete anything. The alternatives are reformatting (losing all data) or buying expensive commercial software.
 
 ### The Solution
 
-MacNTFS re-mounts NTFS drives with full write support using `ntfs-3g` and `macFUSE`. One click — no reformatting, no data loss. Your drive remains fully compatible with Windows.
+MacNTFS re-mounts NTFS drives with full write support using `ntfs-3g` and `FUSE-T`. One click — no reformatting, no data loss. The drive remains fully compatible with Windows.
+
+**Confirmed working on macOS 26 Tahoe (arm64 Apple Silicon):** copy, paste, move, and delete files on NTFS drives.
 
 ### Features
 
@@ -34,18 +37,12 @@ MacNTFS re-mounts NTFS drives with full write support using `ntfs-3g` and `macFU
 |---------|-------------|
 | **Auto-detection** | Detects external drives instantly when connected via USB or hub |
 | **NTFS identification** | Identifies filesystem type and highlights NTFS drives with visual status |
-| **One-click R/W mount** | Re-mounts NTFS drives with full write support via ntfs-3g |
-| **Built-in file manager** | Browse, copy, move, rename, and delete files with drag-and-drop support |
-| **Search** | Real-time search to find files on large drives |
-| **Breadcrumb navigation** | Clickable path segments to jump between folders |
-| **Progress tracking** | Visual progress bar for large file copy operations |
-| **Integrity verification** | Verifies file size after copy to prevent silent corruption |
+| **One-click R/W mount** | Re-mounts NTFS drives with full write support via ntfs-3g + FUSE-T |
+| **Stable mount state** | Tolerant of macOS DiskArbitration cycling — mounted status persists in UI |
 | **Native notifications** | macOS notifications when drives connect or disconnect |
-| **Live logs** | Real-time operation log panel for monitoring all actions |
+| **Live logs** | Real-time operation log panel with copy-to-clipboard |
 | **Dark mode** | Full support for System, Light, and Dark themes |
 | **Bilingual** | English and Spanish interface with instant language switching |
-| **Guided setup** | First-launch wizard installs dependencies with native password dialogs — no terminal needed |
-| **Built-in uninstaller** | Remove the app and all dependencies from Settings with one click |
 | **Storage indicator** | Visual bar showing drive capacity at a glance |
 | **Status bar** | Persistent bottom bar showing disk count, NTFS count, and mount status |
 
@@ -61,85 +58,215 @@ MacNTFS detects drive automatically (DiskArbitration API)
 Click "Mount with Write Support"
         │
         ▼
-App unmounts read-only mount → re-mounts via ntfs-3g with R/W
+App unmounts read-only NTFS mount → re-mounts via ntfs-3g + FUSE-T (NFS loopback)
         │
         ▼
-Full access — browse, copy, move, rename, delete
+Full access — copy, move, rename, delete
         │
         ▼
-Disconnect safely → drive works on Windows exactly the same
+Eject safely → drive works on Windows exactly the same
 ```
 
-### Quick Start
+### Why FUSE-T instead of macFUSE
 
-#### Option 1: Build from source (developers)
+macFUSE requires a kernel extension (kext) that **cannot load on macOS 26 Tahoe on Apple Silicon** due to System Integrity Protection and the new FSKit architecture. FUSE-T uses an NFS loopback mechanism instead of a kext — no kernel extension required, no SIP bypass needed.
 
-**Prerequisites:** You must have [Xcode](https://apps.apple.com/app/xcode/id497799835) installed from the App Store (not just Command Line Tools). Xcode is Apple's IDE and is required to compile macOS applications. It is free but weighs approximately 7 GB.
+---
 
-1. Open the **App Store** on your Mac
-2. Search for **Xcode** and click **Install**
-3. Wait for the download and installation to complete
-4. Open Xcode once to accept the license agreement
-5. Then run in Terminal:
+### Installation (Full Setup Guide)
+
+This is a developer/power-user tool. Full setup requires Terminal. Follow each step exactly.
+
+#### Step 1 — Install Homebrew (if not installed)
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+After installation, follow the "Next steps" shown in the terminal to add Homebrew to your PATH.
+
+#### Step 2 — Install FUSE-T
+
+Download and install from the official website: **https://www.fuse-t.org/**
+
+Or via Homebrew cask:
+
+```bash
+brew install --cask fuse-t
+```
+
+Verify installation:
+
+```bash
+ls /Library/Frameworks/fuse_t.framework && echo "FUSE-T OK"
+```
+
+#### Step 3 — Build ntfs-3g from source
+
+ntfs-3g must be compiled from source and patched to link against `fuse_t.framework` instead of the default `libfuse`. The standard `brew install ntfs-3g` binary links to macFUSE and will not work.
+
+```bash
+# Install build dependencies
+brew install autoconf automake libtool pkg-config
+
+# Clone ntfs-3g source
+git clone https://github.com/tuxera/ntfs-3g.git
+cd ntfs-3g
+
+# Configure and compile against fuse_t.framework
+./autogen.sh
+./configure \
+  CFLAGS="-I/Library/Frameworks/fuse_t.framework/Headers" \
+  LDFLAGS="-F/Library/Frameworks -framework fuse_t" \
+  --disable-ntfsprogs \
+  --disable-crypto
+make -j$(sysctl -n hw.logicalcpu)
+sudo make install
+```
+
+Patch the installed binary to use the correct library path:
+
+```bash
+sudo install_name_tool -change \
+  /usr/local/lib/libfuse.2.dylib \
+  /Library/Frameworks/fuse_t.framework/fuse_t \
+  /opt/homebrew/bin/ntfs-3g
+```
+
+Verify:
+
+```bash
+otool -L /opt/homebrew/bin/ntfs-3g | grep fuse
+# Should show: /Library/Frameworks/fuse_t.framework/fuse_t
+```
+
+Test mount (replace `diskXsY` with your actual disk identifier from `diskutil list`):
+
+```bash
+sudo diskutil unmount force /dev/diskXsY
+sudo mkdir -p /Volumes/NTFSTEST
+sudo /opt/homebrew/bin/ntfs-3g /dev/diskXsY /Volumes/NTFSTEST \
+  -o local,allow_other,auto_xattr,big_writes,noatime,remove_hiberfile
+mount | grep NTFSTEST   # Should show: fuse-t:/... (nfs)
+echo "write test" > /Volumes/NTFSTEST/test.txt && echo "WRITE OK"
+```
+
+#### Step 4 — Configure sudo privileges (NOPASSWD)
+
+The app calls `sudo` via `Process()` — no password dialog appears, no terminal required. This requires NOPASSWD entries for the specific binaries used.
+
+```bash
+sudo tee /etc/sudoers.d/ntfs3g << 'EOF'
+ALL ALL=(ALL) NOPASSWD: /usr/bin/pkill
+ALL ALL=(ALL) NOPASSWD: /usr/sbin/diskutil
+ALL ALL=(ALL) NOPASSWD: /bin/mkdir
+ALL ALL=(ALL) NOPASSWD: /opt/homebrew/bin/ntfs-3g
+ALL ALL=(ALL) NOPASSWD: /sbin/umount
+EOF
+sudo chmod 440 /etc/sudoers.d/ntfs3g
+sudo visudo -c && echo "sudoers OK"
+```
+
+> **Security note:** These entries allow any admin user on this Mac to run those five specific binaries as root without a password. They are scoped to exact paths — no wildcard commands.
+
+#### Step 5 — Grant Full Disk Access to MacNTFS
+
+macOS requires explicit Full Disk Access permission for apps that access raw disk devices (`/dev/diskXsY`).
+
+1. Open **System Settings** → **Privacy & Security** → **Full Disk Access**
+2. Click the **+** button
+3. Navigate to and select **MacNTFS.app**
+4. Toggle it **ON**
+5. Restart MacNTFS if it was already open
+
+Without this, ntfs-3g will fail with `Operation not permitted` when trying to read the NTFS partition.
+
+#### Step 6 — Build and run the app
+
+**From source:**
 
 ```bash
 git clone https://github.com/JhojanAlexanderCalambasRamirez/MacNTFS.git
 cd MacNTFS
-chmod +x setup.sh
-./setup.sh
+xcodebuild -project MacNTFS.xcodeproj -scheme MacNTFS -configuration Release build
 ```
 
-The script will:
-- Install macFUSE and ntfs-3g automatically
-- Detect and fix `xcode-select` configuration (switches from Command Line Tools to Xcode.app if needed)
-- Accept Xcode license automatically
-- Build the app
-- Ask if you want to copy it to `/Applications` or Desktop
+The built app will be at `build/Release/MacNTFS.app` (or wherever your derived data points).
 
-> **Important:** If you only have Command Line Tools installed (not Xcode.app), the build will fail. The script detects this and shows clear instructions. Command Line Tools is NOT the same as Xcode — you need the full Xcode from the App Store.
+**Or open in Xcode:**
 
-#### Option 2: Download release (end users) — Recommended
+```bash
+open MacNTFS.xcodeproj
+```
 
-This option does NOT require Xcode, Terminal, or any development tools.
+Then build with `⌘B` and run with `⌘R`.
 
-1. Go to [Releases](https://github.com/JhojanAlexanderCalambasRamirez/MacNTFS/releases)
-2. Download the latest `.dmg` file
-3. Open the `.dmg` and drag **MacNTFS** to **Applications**
-4. Open MacNTFS — the guided setup will install dependencies automatically
+---
 
-**First launch — macOS Gatekeeper:**
+### First Launch — macOS Gatekeeper
 
-Since the app is not signed with an Apple Developer certificate, macOS will block it on first launch. This is normal and safe. Follow these steps:
+Since the app is not signed with an Apple Developer certificate, macOS will block it on first launch. This is normal and safe.
 
 1. Go to **Applications** folder in Finder
-2. **Right-click** (or Control+click) on **MacNTFS.app** — do NOT double-click
+2. **Right-click** (Control+click) on **MacNTFS.app** — do NOT double-click
 3. Click **Open** from the context menu
-4. A dialog will appear saying macOS cannot verify the developer → Click **Open**
-5. Done. The app will open normally from now on
+4. A dialog will appear: "macOS cannot verify the developer" → Click **Open**
+5. Done. The app opens normally from now on
 
-If step 4 does not show an "Open" button:
+If the dialog does not show an **Open** button:
 
 1. Go to **System Settings** → **Privacy & Security**
 2. Scroll down — you will see: "MacNTFS was blocked because..."
 3. Click **Open Anyway**
 4. Enter your admin password
-5. Done. The app will never ask again
+
+---
 
 ### Requirements
 
-- macOS 14.0+ (Sonoma or later)
-- Apple Silicon (M1/M2/M3/M4/M5) or Intel Mac
-- [Xcode](https://apps.apple.com/app/xcode/id497799835) (only for building from source)
+| Requirement | Version |
+|-------------|---------|
+| macOS | 14.0 Sonoma or later (tested on macOS 26 Tahoe) |
+| Architecture | Apple Silicon (M1/M2/M3/M4/M5) — Intel untested |
+| FUSE-T | 1.0+ |
+| ntfs-3g | 2022+ (compiled from source, patched for fuse_t.framework) |
+| Homebrew | Any recent version |
+| Xcode | Required only to build from source |
 
 ### Dependencies
 
-| Component | Purpose | Installed by |
-|-----------|---------|--------------|
-| [macFUSE](https://osxfuse.github.io/) | Userspace filesystem driver for macOS | setup.sh or in-app wizard |
-| [ntfs-3g](https://github.com/tuxera/ntfs-3g) | Open-source NTFS read/write driver | setup.sh or in-app wizard |
-| [Homebrew](https://brew.sh/) | Package manager (used to install the above) | setup.sh or in-app wizard |
+| Component | Purpose | Source |
+|-----------|---------|--------|
+| [FUSE-T](https://www.fuse-t.org/) | Userspace filesystem via NFS loopback — no kext required | fuse-t.org |
+| [ntfs-3g](https://github.com/tuxera/ntfs-3g) | NTFS read/write driver | Built from source, patched |
+| [Homebrew](https://brew.sh/) | Package manager for build tools | brew.sh |
 
-All dependencies are installed automatically either by `setup.sh` or by the in-app setup wizard on first launch.
+> **Why not macFUSE?** macFUSE requires a kernel extension that cannot load on macOS 26 Tahoe (arm64) with SIP enabled. FUSE-T achieves the same result without a kext using a Go-based NFS loopback server (`go-nfsv4`).
+
+---
+
+### Troubleshooting
+
+**"ntfs-3g not found"**
+Make sure ntfs-3g is at `/opt/homebrew/bin/ntfs-3g`. If it's elsewhere, adjust the path in the sudoers file.
+
+**"Operation not permitted" on `/dev/diskXsY`**
+Full Disk Access is not granted to MacNTFS. See Step 5.
+
+**"sudo: a password is required"**
+The sudoers file is not configured. Run Step 4 again.
+
+**"No such file or directory" on mount**
+The disk disconnected between DA detection and the mount attempt. Click Mount again — DA re-detects quickly.
+
+**"Device not configured"**
+`diskutil unmount force` ran but the device became unavailable. This happens if DA already unmounted it. Click Mount again immediately after seeing the disk reappear.
+
+**Mount succeeds but UI shows "Read-Only" again**
+Likely a permissions issue with Full Disk Access (Step 5). Also verify the NOPASSWD sudoers entries (Step 4).
+
+**Drive appears mounted in terminal but Finder doesn't show it**
+Fuse-T mounts appear as NFS volumes. Open Finder → Go → Go to Folder → type `/Volumes/DRIVENAME`.
 
 ---
 
@@ -151,7 +278,9 @@ macOS detecta discos con formato NTFS (Windows) pero los monta como **solo lectu
 
 ### La Solución
 
-MacNTFS re-monta discos NTFS con soporte completo de escritura usando `ntfs-3g` y `macFUSE`. Un solo clic — sin reformatear, sin pérdida de datos. Tu disco sigue siendo totalmente compatible con Windows.
+MacNTFS re-monta discos NTFS con soporte completo de escritura usando `ntfs-3g` y `FUSE-T`. Un solo clic — sin reformatear, sin pérdida de datos. El disco sigue siendo totalmente compatible con Windows.
+
+**Confirmado funcionando en macOS 26 Tahoe (arm64 Apple Silicon):** copiar, pegar, mover y eliminar archivos en discos NTFS.
 
 ### Funcionalidades
 
@@ -159,20 +288,14 @@ MacNTFS re-monta discos NTFS con soporte completo de escritura usando `ntfs-3g` 
 |---------------|-------------|
 | **Detección automática** | Detecta discos externos al instante cuando se conectan por USB o hub |
 | **Identificación NTFS** | Identifica el tipo de sistema de archivos y resalta discos NTFS con estado visual |
-| **Montaje R/W con un clic** | Re-monta discos NTFS con soporte completo de escritura vía ntfs-3g |
-| **Gestor de archivos integrado** | Explorar, copiar, mover, renombrar y eliminar archivos con soporte drag-and-drop |
-| **Búsqueda** | Búsqueda en tiempo real para encontrar archivos en discos grandes |
-| **Navegación breadcrumb** | Segmentos de ruta clickeables para saltar entre carpetas |
-| **Seguimiento de progreso** | Barra de progreso visual para copias de archivos grandes |
-| **Verificación de integridad** | Verifica tamaño del archivo después de copiar para prevenir corrupción silenciosa |
+| **Montaje R/W con un clic** | Re-monta discos NTFS con soporte completo de escritura vía ntfs-3g + FUSE-T |
+| **Estado estable** | Tolerante al ciclo de DiskArbitration — el estado "montado" persiste en la UI |
 | **Notificaciones nativas** | Notificaciones de macOS al conectar o desconectar discos |
-| **Logs en tiempo real** | Panel de registro de operaciones para monitorear todas las acciones |
+| **Logs en tiempo real** | Panel de registro con botón de copiar al portapapeles |
 | **Modo oscuro** | Soporte completo para temas Sistema, Claro y Oscuro |
 | **Bilingüe** | Interfaz en inglés y español con cambio de idioma instantáneo |
-| **Configuración guiada** | Wizard de primera ejecución que instala dependencias con diálogos nativos de contraseña — sin terminal |
-| **Desinstalador integrado** | Elimina la app y todas las dependencias desde Ajustes con un solo clic |
-| **Indicador de almacenamiento** | Barra visual mostrando la capacidad del disco de un vistazo |
-| **Barra de estado** | Barra inferior persistente mostrando cantidad de discos, NTFS y estado de montaje |
+| **Indicador de almacenamiento** | Barra visual mostrando la capacidad del disco |
+| **Barra de estado** | Barra inferior persistente con conteo de discos y estado de montaje |
 
 ### Cómo Funciona
 
@@ -186,85 +309,187 @@ MacNTFS detecta el disco automáticamente (DiskArbitration API)
 Clic en "Montar con Escritura"
         │
         ▼
-La app desmonta el montaje solo lectura → re-monta vía ntfs-3g con R/W
+La app desmonta el montaje solo lectura → re-monta vía ntfs-3g + FUSE-T (NFS loopback)
         │
         ▼
-Acceso completo — explorar, copiar, mover, renombrar, eliminar
+Acceso completo — copiar, mover, renombrar, eliminar
         │
         ▼
-Desconectar de forma segura → el disco funciona en Windows exactamente igual
+Expulsar de forma segura → el disco funciona en Windows exactamente igual
 ```
 
-### Inicio Rápido
+### Por qué FUSE-T en vez de macFUSE
 
-#### Opción 1: Compilar desde fuente (desarrolladores)
+macFUSE requiere una extensión de kernel (kext) que **no puede cargar en macOS 26 Tahoe en Apple Silicon** debido a la Protección de Integridad del Sistema y la nueva arquitectura FSKit. FUSE-T usa un mecanismo NFS loopback en lugar de un kext — sin extensión de kernel, sin desactivar SIP.
 
-**Requisito previo:** Debes tener [Xcode](https://apps.apple.com/app/xcode/id497799835) instalado desde la App Store (no solo Command Line Tools). Xcode es el IDE de Apple y es necesario para compilar aplicaciones macOS. Es gratuito pero pesa aproximadamente 7 GB.
+---
 
-1. Abrir la **App Store** en tu Mac
-2. Buscar **Xcode** y hacer clic en **Instalar**
-3. Esperar a que termine la descarga e instalación
-4. Abrir Xcode una vez para aceptar el acuerdo de licencia
-5. Luego ejecutar en Terminal:
+### Instalación (Guía Completa)
+
+Esta es una herramienta para desarrolladores y usuarios avanzados. La configuración completa requiere Terminal. Sigue cada paso exactamente.
+
+#### Paso 1 — Instalar Homebrew (si no está instalado)
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+Después de la instalación, sigue los "Next steps" que aparecen en la terminal para agregar Homebrew al PATH.
+
+#### Paso 2 — Instalar FUSE-T
+
+Descargar e instalar desde el sitio oficial: **https://www.fuse-t.org/**
+
+O vía Homebrew cask:
+
+```bash
+brew install --cask fuse-t
+```
+
+Verificar instalación:
+
+```bash
+ls /Library/Frameworks/fuse_t.framework && echo "FUSE-T OK"
+```
+
+#### Paso 3 — Compilar ntfs-3g desde fuente
+
+ntfs-3g debe compilarse desde fuente y parchearse para enlazar con `fuse_t.framework` en lugar del `libfuse` por defecto. El binario estándar `brew install ntfs-3g` enlaza con macFUSE y no funcionará.
+
+```bash
+# Instalar dependencias de compilación
+brew install autoconf automake libtool pkg-config
+
+# Clonar fuente ntfs-3g
+git clone https://github.com/tuxera/ntfs-3g.git
+cd ntfs-3g
+
+# Configurar y compilar contra fuse_t.framework
+./autogen.sh
+./configure \
+  CFLAGS="-I/Library/Frameworks/fuse_t.framework/Headers" \
+  LDFLAGS="-F/Library/Frameworks -framework fuse_t" \
+  --disable-ntfsprogs \
+  --disable-crypto
+make -j$(sysctl -n hw.logicalcpu)
+sudo make install
+```
+
+Parchear el binario instalado para usar la ruta de librería correcta:
+
+```bash
+sudo install_name_tool -change \
+  /usr/local/lib/libfuse.2.dylib \
+  /Library/Frameworks/fuse_t.framework/fuse_t \
+  /opt/homebrew/bin/ntfs-3g
+```
+
+Verificar:
+
+```bash
+otool -L /opt/homebrew/bin/ntfs-3g | grep fuse
+# Debe mostrar: /Library/Frameworks/fuse_t.framework/fuse_t
+```
+
+Prueba de montaje (reemplaza `diskXsY` con tu identificador real de `diskutil list`):
+
+```bash
+sudo diskutil unmount force /dev/diskXsY
+sudo mkdir -p /Volumes/NTFSTEST
+sudo /opt/homebrew/bin/ntfs-3g /dev/diskXsY /Volumes/NTFSTEST \
+  -o local,allow_other,auto_xattr,big_writes,noatime,remove_hiberfile
+mount | grep NTFSTEST   # Debe mostrar: fuse-t:/... (nfs)
+echo "prueba escritura" > /Volumes/NTFSTEST/test.txt && echo "ESCRITURA OK"
+```
+
+#### Paso 4 — Configurar privilegios sudo (NOPASSWD)
+
+La app llama `sudo` vía `Process()` — no aparece ningún diálogo de contraseña, no se requiere terminal. Esto requiere entradas NOPASSWD para los binarios específicos que se usan.
+
+```bash
+sudo tee /etc/sudoers.d/ntfs3g << 'EOF'
+ALL ALL=(ALL) NOPASSWD: /usr/bin/pkill
+ALL ALL=(ALL) NOPASSWD: /usr/sbin/diskutil
+ALL ALL=(ALL) NOPASSWD: /bin/mkdir
+ALL ALL=(ALL) NOPASSWD: /opt/homebrew/bin/ntfs-3g
+ALL ALL=(ALL) NOPASSWD: /sbin/umount
+EOF
+sudo chmod 440 /etc/sudoers.d/ntfs3g
+sudo visudo -c && echo "sudoers OK"
+```
+
+> **Nota de seguridad:** Estas entradas permiten a cualquier usuario admin en este Mac ejecutar esos cinco binarios específicos como root sin contraseña. Están limitadas a rutas exactas — sin comandos con wildcard.
+
+#### Paso 5 — Otorgar Acceso Total al Disco a MacNTFS
+
+macOS requiere permiso explícito de Acceso Total al Disco para apps que acceden a dispositivos de disco raw (`/dev/diskXsY`).
+
+1. Abrir **Ajustes del Sistema** → **Privacidad y Seguridad** → **Acceso Total al Disco**
+2. Hacer clic en el botón **+**
+3. Navegar y seleccionar **MacNTFS.app**
+4. Activar el interruptor a **ON**
+5. Reiniciar MacNTFS si ya estaba abierto
+
+Sin esto, ntfs-3g fallará con `Operation not permitted` al intentar leer la partición NTFS.
+
+#### Paso 6 — Compilar y ejecutar la app
+
+**Desde fuente:**
 
 ```bash
 git clone https://github.com/JhojanAlexanderCalambasRamirez/MacNTFS.git
 cd MacNTFS
-chmod +x setup.sh
-./setup.sh
+xcodebuild -project MacNTFS.xcodeproj -scheme MacNTFS -configuration Release build
 ```
 
-El script va a:
-- Instalar macFUSE y ntfs-3g automáticamente
-- Detectar y corregir la configuración de `xcode-select` (cambia de Command Line Tools a Xcode.app si es necesario)
-- Aceptar la licencia de Xcode automáticamente
-- Compilar la app
-- Preguntar si quieres copiarla a `/Applications` o al Escritorio
+**O abrir en Xcode:**
 
-> **Importante:** Si solo tienes Command Line Tools instalado (no Xcode.app), la compilación fallará. El script detecta esto y muestra instrucciones claras. Command Line Tools NO es lo mismo que Xcode — necesitas el Xcode completo desde la App Store.
+```bash
+open MacNTFS.xcodeproj
+```
 
-#### Opción 2: Descargar release (usuarios finales) — Recomendado
+Luego compilar con `⌘B` y ejecutar con `⌘R`.
 
-Esta opción NO requiere Xcode, Terminal, ni herramientas de desarrollo.
+---
 
-1. Ir a [Releases](https://github.com/JhojanAlexanderCalambasRamirez/MacNTFS/releases)
-2. Descargar el último archivo `.dmg`
-3. Abrir el `.dmg` y arrastrar **MacNTFS** a **Applications**
-4. Abrir MacNTFS — la configuración guiada instalará las dependencias automáticamente
+### Primera Ejecución — Gatekeeper de macOS
 
-**Primera ejecución — macOS Gatekeeper:**
-
-Como la app no está firmada con certificado de Apple Developer, macOS la bloqueará en la primera ejecución. Esto es normal y seguro. Sigue estos pasos:
+Como la app no está firmada con certificado de Apple Developer, macOS la bloqueará en la primera ejecución. Esto es normal y seguro.
 
 1. Ir a la carpeta **Applications** en Finder
-2. **Click derecho** (o Control+click) sobre **MacNTFS.app** — NO hacer doble click
+2. **Click derecho** (Control+click) sobre **MacNTFS.app** — NO hacer doble click
 3. Hacer clic en **Abrir** en el menú contextual
-4. Aparecerá un diálogo diciendo que macOS no puede verificar al desarrollador → Hacer clic en **Abrir**
+4. Aparecerá un diálogo: "macOS no puede verificar al desarrollador" → Hacer clic en **Abrir**
 5. Listo. La app abrirá normalmente de ahora en adelante
 
-Si en el paso 4 no aparece el botón "Abrir":
+Si no aparece el botón **Abrir**:
 
 1. Ir a **Ajustes del Sistema** → **Privacidad y Seguridad**
-2. Scrollear hacia abajo — verás: "Se bloqueó MacNTFS porque..."
+2. Scroll hacia abajo — verás: "Se bloqueó MacNTFS porque..."
 3. Hacer clic en **Abrir de todas formas**
-4. Ingresar tu contraseña de administrador
-5. Listo. La app no volverá a preguntar
+4. Ingresar contraseña de administrador
 
-### Requisitos
+---
 
-- macOS 14.0+ (Sonoma o posterior)
-- Apple Silicon (M1/M2/M3/M4/M5) o Intel Mac
-- [Xcode](https://apps.apple.com/app/xcode/id497799835) (solo para compilar desde fuente)
+### Solución de Problemas
 
-### Dependencias
+**"ntfs-3g not found"**
+Verificar que ntfs-3g esté en `/opt/homebrew/bin/ntfs-3g`. Si está en otra ruta, ajustar en el archivo sudoers.
 
-| Componente | Propósito | Instalado por |
-|------------|-----------|---------------|
-| [macFUSE](https://osxfuse.github.io/) | Driver de filesystem en espacio de usuario para macOS | setup.sh o wizard en la app |
-| [ntfs-3g](https://github.com/tuxera/ntfs-3g) | Driver NTFS de lectura/escritura open-source | setup.sh o wizard en la app |
-| [Homebrew](https://brew.sh/) | Gestor de paquetes (usado para instalar los anteriores) | setup.sh o wizard en la app |
+**"Operation not permitted" en `/dev/diskXsY`**
+No se ha otorgado Acceso Total al Disco a MacNTFS. Ver Paso 5.
 
-Todas las dependencias se instalan automáticamente ya sea por `setup.sh` o por el wizard de configuración en la primera ejecución.
+**"sudo: se requiere contraseña"**
+El archivo sudoers no está configurado. Ejecutar el Paso 4 nuevamente.
+
+**"No such file or directory" al montar**
+El disco se desconectó entre la detección DA y el intento de montaje. Hacer clic en Montar de nuevo — DA lo re-detecta rápidamente.
+
+**"Device not configured"**
+`diskutil unmount force` se ejecutó pero el dispositivo quedó no disponible. Hacer clic en Montar inmediatamente después de que el disco reaparezca.
+
+**El disco aparece montado en terminal pero Finder no lo muestra**
+FUSE-T monta como volúmenes NFS. Abrir Finder → Ir → Ir a la carpeta → escribir `/Volumes/NOMBRE_DISCO`.
 
 ---
 
@@ -272,59 +497,50 @@ Todas las dependencias se instalan automáticamente ya sea por `setup.sh` o por 
 
 | Technology | Purpose |
 |------------|---------|
-| **Swift 6** | Programming language with strict concurrency |
-| **SwiftUI** | Native macOS declarative UI framework |
-| **DiskArbitration.framework** | Real-time disk connect/disconnect detection |
-| **macFUSE** | Userspace filesystem driver |
-| **ntfs-3g** | NTFS read/write implementation |
-| **XPC Services** | Privileged operations (mount/unmount with root) |
+| **Swift 6** | Language with strict concurrency |
+| **SwiftUI** | Native macOS declarative UI |
+| **DiskArbitration.framework** | Real-time disk connect/disconnect events |
+| **FUSE-T** | Userspace filesystem via NFS loopback (no kext) |
+| **ntfs-3g** | NTFS read/write driver (compiled from source, patched) |
+| **sudo + Process()** | Privileged operations — preserves app TCC responsible process |
 | **UserNotifications** | Native macOS notification system |
-| **NSAppleScript** | Privileged command execution with native password dialog |
 
 ## Project Structure / Estructura del Proyecto
 
 ```
 MacNTFS/
-├── App/                 # Entry point, settings, theme, onboarding
-│   └── MacNTFSApp.swift
-├── Models/              # Data models
+├── App/
+│   └── MacNTFSApp.swift              # Entry point, settings, theme, onboarding
+├── Models/
 │   ├── ExternalDisk.swift
 │   └── FileOperation.swift
-├── Services/            # Core logic
-│   ├── DiskDetectionService.swift    # DiskArbitration monitoring
-│   ├── NTFSMountService.swift        # ntfs-3g mount/unmount
+├── Services/
+│   ├── DiskDetectionService.swift    # DiskArbitration monitoring + DA cycling guard
+│   ├── NTFSMountService.swift        # ntfs-3g mount/unmount via sudo Process()
 │   ├── FileOperationService.swift    # Copy, move, rename, delete
 │   ├── LogService.swift              # Log aggregation
-│   └── NotificationService.swift     # Native macOS notifications
-├── ViewModels/          # UI state management
-│   ├── DiskViewModel.swift
+│   └── NotificationService.swift    # Native macOS notifications
+├── ViewModels/
+│   ├── DiskViewModel.swift           # Mount state, DA cycling protection
 │   └── FileOperationViewModel.swift
-├── Views/               # SwiftUI views
+├── Views/
 │   ├── ContentView.swift             # Main layout + status bar
 │   ├── DiskListView.swift            # Sidebar with disk cards
-│   ├── FileManagerView.swift         # File browser + search
-│   ├── LogView.swift                 # Log inspector panel
+│   ├── FileManagerView.swift         # File browser
+│   ├── LogView.swift                 # Log inspector with copy button
 │   └── OnboardingView.swift          # First-launch setup wizard
-├── Helpers/             # Utilities
-│   ├── HelperProtocol.swift          # XPC interface
-│   ├── PrivilegedHelper.swift        # XPC client for root ops
-│   ├── ShellExecutor.swift           # Async Process wrapper
-│   └── LocalizationManager.swift     # EN/ES translations
-└── Resources/
-    ├── Assets.xcassets/              # App icon
-    └── MacNTFS.entitlements
+└── Helpers/
+    ├── ShellExecutor.swift
+    └── LocalizationManager.swift     # EN/ES translations
 ```
 
 ## Building / Compilar
 
 ```bash
-# SPM
-swift build
+# Release build
+xcodebuild -project MacNTFS.xcodeproj -scheme MacNTFS -configuration Release build
 
-# Xcode
-xcodebuild -project MacNTFS.xcodeproj -scheme MacNTFS build
-
-# Create .dmg for distribution / Crear .dmg para distribución
+# Create .dmg for distribution
 chmod +x scripts/create-dmg.sh
 mkdir -p dist
 ./scripts/create-dmg.sh 1.0.0
