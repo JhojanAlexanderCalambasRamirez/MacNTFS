@@ -46,12 +46,56 @@ actor FileOperationService {
     }
 
     func deleteFile(at path: String) async throws {
-        guard FileManager.default.fileExists(atPath: path) else {
-            throw NTFSError.operationFailed("File not found: \(path)")
+        // Use /bin/rm via Process() instead of FileManager.removeItem.
+        // FileManager calls on NFS (fuse-t loopback) can hang indefinitely
+        // when the mount is in a transient state. Process() runs in a separate
+        // thread and can be terminated after a timeout.
+        let (code, output) = try await runWithTimeout(
+            executable: "/bin/rm",
+            arguments: ["-rf", path],
+            timeoutSeconds: 15
+        )
+        if code != 0 {
+            throw NTFSError.operationFailed(output.isEmpty ? "rm exited \(code)" : output)
         }
-
-        try FileManager.default.removeItem(atPath: path)
         LogService.shared.log(.info, "Deleted: \(URL(fileURLWithPath: path).lastPathComponent)")
+    }
+
+    private func runWithTimeout(executable: String, arguments: [String], timeoutSeconds: Double) async throws -> (Int32, String) {
+        return try await withThrowingTaskGroup(of: (Int32, String).self) { group in
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: executable)
+            process.arguments = arguments
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            process.standardError = pipe
+
+            group.addTask {
+                return try await withCheckedThrowingContinuation { continuation in
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        do {
+                            try process.run()
+                            process.waitUntilExit()
+                            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                            let out = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                            continuation.resume(returning: (process.terminationStatus, out))
+                        } catch {
+                            continuation.resume(throwing: error)
+                        }
+                    }
+                }
+            }
+
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(timeoutSeconds * 1_000_000_000))
+                process.terminate()
+                throw NTFSError.operationFailed("Operation timed out (\(Int(timeoutSeconds))s) — drive may be unresponsive")
+            }
+
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
+        }
     }
 
     func listContents(at path: String) throws -> [(name: String, isDirectory: Bool, size: UInt64, modified: Date)] {

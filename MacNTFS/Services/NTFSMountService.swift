@@ -44,11 +44,13 @@ actor NTFSMountService {
         // Create mount point
         _ = await sudo("/bin/mkdir", ["-p", mountPoint])
 
-        // Mount with ntfs-3g
-        let (exitCode, output) = await sudo(ntfs3gPath, [
-            devicePath, mountPoint,
-            "-o", "local,allow_other,auto_xattr,big_writes,noatime,remove_hiberfile"
-        ])
+        // Mount with ntfs-3g.
+        // uid/gid: mount files owned by the calling user, not root.
+        // Without this, FileManager operations fail with EPERM on the NFS mount.
+        let uid = Int(getuid())
+        let gid = Int(getgid())
+        let options = "local,allow_other,auto_xattr,big_writes,noatime,remove_hiberfile,uid=\(uid),gid=\(gid)"
+        let (exitCode, output) = await sudo(ntfs3gPath, [devicePath, mountPoint, "-o", options])
 
         if exitCode != 0 {
             let msg = output.isEmpty ? "ntfs-3g exited \(exitCode)" : output
