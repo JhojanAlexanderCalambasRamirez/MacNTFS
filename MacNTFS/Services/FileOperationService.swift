@@ -46,10 +46,11 @@ actor FileOperationService {
     }
 
     func deleteFile(at path: String) async throws {
+        // Pre-clear permissions for files created before fmask=0 was in effect
+        _ = try? await runWithTimeout(executable: "/bin/chmod", arguments: ["-R", "777", path], timeoutSeconds: 5)
         // Use /bin/rm via Process() instead of FileManager.removeItem.
         // FileManager calls on NFS (fuse-t loopback) can hang indefinitely
-        // when the mount is in a transient state. Process() runs in a separate
-        // thread and can be terminated after a timeout.
+        // when the mount is in a transient state.
         let (code, output) = try await runWithTimeout(
             executable: "/bin/rm",
             arguments: ["-rf", path],

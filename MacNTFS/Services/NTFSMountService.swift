@@ -49,7 +49,10 @@ actor NTFSMountService {
         // Without this, FileManager operations fail with EPERM on the NFS mount.
         let uid = Int(getuid())
         let gid = Int(getgid())
-        let options = "local,allow_other,auto_xattr,big_writes,noatime,remove_hiberfile,uid=\(uid),gid=\(gid)"
+        // fmask=0,dmask=0: all files owned by current user, full rwx — prevents Finder "Locked" errors.
+        // auto_xattr removed: it creates ._AppleDouble files that can become immutable and block deletion.
+        // nolocal: marks mount as network volume so Spotlight (mds) doesn't index it and hold file handles open.
+        let options = "allow_other,big_writes,noatime,remove_hiberfile,uid=\(uid),gid=\(gid),fmask=0,dmask=0,nolocal"
         let (exitCode, output) = await sudo(ntfs3gPath, [devicePath, mountPoint, "-o", options])
 
         if exitCode != 0 {
@@ -66,6 +69,9 @@ actor NTFSMountService {
         guard !check.isEmpty else {
             throw NTFSError.mountFailed("ntfs-3g started but volume not found at \(mountPoint)")
         }
+
+        // Prevent Spotlight from indexing — mds holds file handles open causing "folder in use" on delete.
+        FileManager.default.createFile(atPath: "\(mountPoint)/.metadata_never_index", contents: nil)
 
         LogService.shared.log(.info, "Successfully mounted \(disk.name) at \(mountPoint)")
         return mountPoint

@@ -68,15 +68,68 @@ final class DiskDetectionService: ObservableObject {
             )
         }
 
-        let match: CFDictionary = [kDADiskDescriptionVolumeMountableKey: true] as NSDictionary
-
-        DARegisterDiskAppearedCallback(session, match, appearedCallback, selfPtr)
-        DARegisterDiskDisappearedCallback(session, match, disappearedCallback, selfPtr)
+        // nil match: catch ALL disks including unmounted NTFS partitions.
+        // kDADiskDescriptionVolumeMountableKey:true would miss NTFS on macOS 26 (no built-in NTFS driver).
+        DARegisterDiskAppearedCallback(session, nil, appearedCallback, selfPtr)
+        DARegisterDiskDisappearedCallback(session, nil, disappearedCallback, selfPtr)
         DARegisterDiskMountApprovalCallback(session, nil, mountApproval, selfPtr)
         DASessionSetDispatchQueue(session, queue)
 
         LogService.shared.log(.info, "Disk monitoring started")
         scanExistingDisks()
+        restoreExistingMounts()
+    }
+
+    // Detect ntfs-3g processes already running from a previous session.
+    // Without this, restarting the app while a disk is mounted shows it as .readOnly
+    // and DA cycling isn't blocked, causing Error -43 stale file handles.
+    private func restoreExistingMounts() {
+        Task.detached { [weak self] in
+            guard let self else { return }
+
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/bin/sh")
+            process.arguments = ["-c", "ps aux | grep -v grep | grep ntfs-3g"]
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            try? process.run()
+            process.waitUntilExit()
+
+            let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+            let lines = output.components(separatedBy: .newlines).filter { !$0.isEmpty }
+
+            for line in lines {
+                // ps line: user pid cpu mem ... /path/to/ntfs-3g /dev/diskXsY /Volumes/NAME -o ...
+                let parts = line.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+                guard let ntfsIdx = parts.firstIndex(where: { $0.hasSuffix("ntfs-3g") }),
+                      ntfsIdx + 2 < parts.count else { continue }
+
+                let devicePath = parts[ntfsIdx + 1]
+                let mountPoint = parts[ntfsIdx + 2]
+
+                guard devicePath.hasPrefix("/dev/"), mountPoint.hasPrefix("/Volumes/") else { continue }
+
+                let bsdName = String(devicePath.dropFirst("/dev/".count))
+                let volumeName = String(mountPoint.dropFirst("/Volumes/".count))
+
+                await MainActor.run {
+                    let existingSize = self.disks.first(where: { $0.id == bsdName })?.size ?? 0
+                    let restored = ExternalDisk(
+                        id: bsdName,
+                        name: volumeName,
+                        fileSystem: "ntfs",
+                        size: existingSize,
+                        mountPoint: mountPoint,
+                        status: .mounted,
+                        isRemovable: true,
+                        busProtocol: "USB"
+                    )
+                    self.addOrUpdateDisk(restored)
+                    self.claimDisk(bsdName)
+                    LogService.shared.log(.info, "Restored existing mount: \(volumeName) (\(bsdName)) at \(mountPoint)")
+                }
+            }
+        }
     }
 
     func stopMonitoring() {
@@ -129,9 +182,15 @@ final class DiskDetectionService: ObservableObject {
     private nonisolated func handleDiskAppeared(_ daDisk: DADisk) {
         guard let desc = DADiskCopyDescription(daDisk) as? [String: Any] else { return }
 
+        // Skip internal disks (main SSD, APFS containers, Recovery, Preboot, etc.)
+        let isInternal = desc[kDADiskDescriptionDeviceInternalKey as String] as? Bool ?? false
+        guard !isInternal else { return }
+
         let bsdName = desc[kDADiskDescriptionMediaBSDNameKey as String] as? String ?? "unknown"
-        let volumeName = desc[kDADiskDescriptionVolumeNameKey as String] as? String ?? "Untitled"
-        let fsType = desc[kDADiskDescriptionVolumeKindKey as String] as? String ?? "unknown"
+        let volumeName = desc[kDADiskDescriptionVolumeNameKey as String] as? String ?? ""
+        let fsType = desc[kDADiskDescriptionVolumeKindKey as String] as? String ?? ""
+        // Partition content type — present even for unmounted partitions (e.g. "Windows_NTFS")
+        let mediaContent = desc[kDADiskDescriptionMediaContentKey as String] as? String ?? ""
         let mediaSize = desc[kDADiskDescriptionMediaSizeKey as String] as? UInt64 ?? 0
         let removable = desc[kDADiskDescriptionMediaRemovableKey as String] as? Bool ?? false
         let protocol_ = desc[kDADiskDescriptionDeviceProtocolKey as String] as? String ?? ""
@@ -139,6 +198,17 @@ final class DiskDetectionService: ObservableObject {
 
         // Skip fuse-t NFS loopback mounts — not real external disks
         guard fsType != "nfs" && fsType != "autofs" else { return }
+
+        // Skip virtual/container disks (no BSD name, or media content is a partition scheme)
+        guard bsdName != "unknown",
+              mediaContent != "GUID_partition_scheme",
+              mediaContent != "FDisk_partition_scheme" else { return }
+
+        // Resolve file system: use volume kind if mounted, fall back to media content for unmounted partitions
+        let resolvedFs = fsType.isEmpty ? mediaContent : fsType
+        let isNTFS = resolvedFs.lowercased().contains("ntfs") || mediaContent.lowercased().contains("ntfs")
+        // Use BSD name as fallback display name for unmounted partitions with no volume label
+        let displayName = volumeName.isEmpty ? bsdName : volumeName
 
         let busProtocol: String
         switch protocol_.lowercased() {
@@ -150,11 +220,11 @@ final class DiskDetectionService: ObservableObject {
 
         let disk = ExternalDisk(
             id: bsdName,
-            name: volumeName,
-            fileSystem: fsType,
+            name: displayName,
+            fileSystem: resolvedFs,
             size: mediaSize,
             mountPoint: mountURL?.path,
-            status: fsType.lowercased().contains("ntfs") ? .readOnly : .detected,
+            status: isNTFS ? .readOnly : .detected,
             isRemovable: removable,
             busProtocol: busProtocol
         )
@@ -166,7 +236,7 @@ final class DiskDetectionService: ObservableObject {
             })
             if alreadyMounted { return }
             self.addOrUpdateDisk(disk)
-            LogService.shared.log(.info, "Disk appeared: \(disk.name) (\(disk.fileSystem)) — \(disk.sizeFormatted)")
+            LogService.shared.log(.info, "Disk appeared: \(disk.name) (\(resolvedFs.isEmpty ? "unknown" : resolvedFs)) — \(disk.sizeFormatted)")
             NotificationService.sendDiskConnected(disk)
         }
     }
@@ -200,10 +270,15 @@ final class DiskDetectionService: ObservableObject {
     private nonisolated func parseDiskInfo(_ info: [String: Any]) -> ExternalDisk? {
         guard let bsdName = info["DeviceIdentifier"] as? String else { return nil }
         let content = info["Content"] as? String ?? ""
-        guard content != "nfs" && content != "autofs" else { return nil }
+        guard content != "nfs" && content != "autofs",
+              content != "GUID_partition_scheme",
+              content != "FDisk_partition_scheme" else { return nil }
         let size = info["Size"] as? UInt64 ?? 0
-        let volumeName = info["VolumeName"] as? String ?? "Untitled"
+        // VolumeName may be absent for unmounted partitions — use BSD name as fallback
+        let rawName = info["VolumeName"] as? String ?? ""
+        let volumeName = rawName.isEmpty ? bsdName : rawName
         let mountPoint = info["MountPoint"] as? String
+        let isNTFS = content.lowercased().contains("ntfs")
 
         return ExternalDisk(
             id: bsdName,
@@ -211,7 +286,7 @@ final class DiskDetectionService: ObservableObject {
             fileSystem: content,
             size: size,
             mountPoint: mountPoint,
-            status: content.lowercased().contains("ntfs") ? .readOnly : .detected,
+            status: isNTFS ? .readOnly : .detected,
             isRemovable: true,
             busProtocol: "USB"
         )
