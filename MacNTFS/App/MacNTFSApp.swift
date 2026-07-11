@@ -121,7 +121,7 @@ struct DependencyCheckView: View {
                 HStack {
                     Image(systemName: fuseInstalled ? "checkmark.circle.fill" : "xmark.circle.fill")
                         .foregroundColor(fuseInstalled ? .green : .red)
-                    Text("macFUSE")
+                    Text("FUSE-T")
                     Spacer()
                     if fuseInstalled {
                         Text(loc.t("installed")).font(.caption).foregroundColor(.green)
@@ -135,8 +135,7 @@ struct DependencyCheckView: View {
     private func checkDeps() {
         ntfs3gInstalled = FileManager.default.fileExists(atPath: "/opt/homebrew/bin/ntfs-3g") ||
                           FileManager.default.fileExists(atPath: "/usr/local/bin/ntfs-3g")
-        fuseInstalled = FileManager.default.fileExists(atPath: "/Library/Frameworks/macFUSE.framework") ||
-                        FileManager.default.fileExists(atPath: "/usr/local/lib/libfuse.dylib")
+        fuseInstalled = FileManager.default.fileExists(atPath: "/Library/Frameworks/fuse_t.framework")
     }
 }
 
