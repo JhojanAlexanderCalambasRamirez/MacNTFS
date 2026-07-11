@@ -23,6 +23,29 @@ struct ContentView: View {
             }
             .toolbar {
                 ToolbarItemGroup(placement: .automatic) {
+                    // Disk action buttons — visible when a disk is selected
+                    if let disk = diskVM.selectedDisk {
+                        if disk.status == .mounted {
+                            Button {
+                                Task { await diskVM.unmountDisk(disk) }
+                            } label: {
+                                Image(systemName: "arrow.uturn.backward.circle")
+                            }
+                            .help(loc.t("unmount"))
+                            .disabled(diskVM.isMounting)
+                        }
+
+                        Button {
+                            Task { await diskVM.ejectDisk(disk) }
+                        } label: {
+                            Image(systemName: "eject.fill")
+                        }
+                        .help(loc.t("eject.safe"))
+                        .disabled(diskVM.isMounting || disk.status == .ejecting)
+
+                        Divider()
+                    }
+
                     Button { showingSettings.toggle() } label: {
                         Image(systemName: "gearshape")
                     }
