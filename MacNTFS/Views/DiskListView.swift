@@ -9,7 +9,10 @@ struct DiskListView: View {
             if !diskVM.ntfsDisks.isEmpty {
                 Section(loc.t("ntfs.drives")) {
                     ForEach(diskVM.ntfsDisks) { disk in
-                        DiskCardView(disk: disk)
+                        // Pass diskId so the card reads live state from diskVM.
+                        // Passing disk directly captures a value snapshot — status
+                        // changes (mount/unmount) would not update the card buttons.
+                        DiskCardView(diskId: disk.id)
                             .tag(disk)
                     }
                 }
@@ -18,7 +21,7 @@ struct DiskListView: View {
             if !diskVM.otherDisks.isEmpty {
                 Section(loc.t("other.drives")) {
                     ForEach(diskVM.otherDisks) { disk in
-                        DiskCardView(disk: disk)
+                        DiskCardView(diskId: disk.id)
                             .tag(disk)
                     }
                 }
@@ -51,22 +54,35 @@ struct DiskListView: View {
 // MARK: - Disk Card
 
 struct DiskCardView: View {
-    let disk: ExternalDisk
+    let diskId: String
     @EnvironmentObject var diskVM: DiskViewModel
     @EnvironmentObject var loc: LocalizationManager
 
+    // Always reads the current disk from diskVM so any status change
+    // (mounting → mounted → unmounting) re-renders the action buttons immediately.
+    private var disk: ExternalDisk? {
+        diskVM.diskService.disks.first { $0.id == diskId }
+    }
+
     var body: some View {
+        if let disk {
+            cardContent(disk: disk)
+        }
+    }
+
+    @ViewBuilder
+    private func cardContent(disk: ExternalDisk) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             // Row 1: icon + name + action buttons
             HStack(spacing: 10) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(statusColor.opacity(0.12))
+                        .fill(statusColor(disk).opacity(0.12))
                         .frame(width: 36, height: 36)
 
-                    Image(systemName: iconName)
+                    Image(systemName: iconName(disk))
                         .font(.system(size: 17))
-                        .foregroundColor(statusColor)
+                        .foregroundColor(statusColor(disk))
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -91,8 +107,7 @@ struct DiskCardView: View {
 
                 Spacer()
 
-                // Action buttons — always visible
-                actionButtons
+                actionButtons(disk: disk)
             }
 
             // Row 2: storage bar + size + status
@@ -104,7 +119,7 @@ struct DiskCardView: View {
                             .frame(height: 5)
 
                         RoundedRectangle(cornerRadius: 2)
-                            .fill(storageBarColor)
+                            .fill(storageBarColor(disk))
                             .frame(width: max(0, geo.size.width * storageUsedFraction), height: 5)
                     }
                 }
@@ -119,11 +134,11 @@ struct DiskCardView: View {
 
                     HStack(spacing: 3) {
                         Circle()
-                            .fill(statusColor)
+                            .fill(statusColor(disk))
                             .frame(width: 5, height: 5)
                         Text(disk.status.rawValue)
                             .font(.system(size: 10))
-                            .foregroundColor(statusColor)
+                            .foregroundColor(statusColor(disk))
                     }
                 }
             }
@@ -134,52 +149,42 @@ struct DiskCardView: View {
     // MARK: - Action Buttons
 
     @ViewBuilder
-    private var actionButtons: some View {
+    private func actionButtons(disk: ExternalDisk) -> some View {
         if disk.status == .mounting || disk.status == .unmounting || disk.status == .ejecting {
             ProgressView()
                 .scaleEffect(0.65)
                 .frame(width: 24, height: 24)
         } else {
             HStack(spacing: 4) {
-                // Mount button (NTFS only, when not mounted)
                 if disk.isNTFS && (disk.status == .readOnly || disk.status == .detected) {
-                    CardActionButton(
-                        icon: "lock.open.fill",
-                        label: loc.language == .spanish ? "Montar" : "Mount",
-                        color: .blue
-                    ) {
+                    CardActionButton(icon: "lock.open.fill",
+                                     label: loc.language == .spanish ? "Montar" : "Mount",
+                                     color: .blue) {
                         Task { await diskVM.mountWithWriteSupport(disk) }
                     }
                     .disabled(diskVM.isMounting)
                 }
 
-                // Open in Finder + Unmount (mounted only)
                 if disk.status == .mounted {
                     if let mp = disk.mountPoint {
-                        CardActionButton(
-                            icon: "folder.fill",
-                            label: loc.language == .spanish ? "Finder" : "Finder",
-                            color: .blue
-                        ) {
+                        CardActionButton(icon: "folder.fill",
+                                         label: "Finder",
+                                         color: .blue) {
                             NSWorkspace.shared.open(URL(fileURLWithPath: mp))
                         }
                     }
-                    CardActionButton(
-                        icon: "arrow.uturn.backward",
-                        label: loc.t("unmount"),
-                        color: .secondary
-                    ) {
+
+                    CardActionButton(icon: "arrow.uturn.backward",
+                                     label: loc.t("unmount"),
+                                     color: .secondary) {
                         Task { await diskVM.unmountDisk(disk) }
                     }
                     .disabled(diskVM.isMounting)
                 }
 
-                // Eject button (always shown for any external disk)
-                CardActionButton(
-                    icon: "eject.fill",
-                    label: loc.language == .spanish ? "Expulsar" : "Eject",
-                    color: .orange
-                ) {
+                CardActionButton(icon: "eject.fill",
+                                 label: loc.language == .spanish ? "Expulsar" : "Eject",
+                                 color: .orange) {
                     Task { await diskVM.ejectDisk(disk) }
                 }
                 .disabled(diskVM.isMounting)
@@ -189,33 +194,30 @@ struct DiskCardView: View {
 
     // MARK: - Helpers
 
-    private var storageUsedFraction: CGFloat {
-        disk.size > 0 ? 0.65 : 0
-    }
+    private var storageUsedFraction: CGFloat { 0.65 }
 
-    private var storageBarColor: LinearGradient {
-        let fraction = storageUsedFraction
-        let color: Color = fraction > 0.9 ? .red : fraction > 0.7 ? .orange : .blue
+    private func storageBarColor(_ disk: ExternalDisk) -> LinearGradient {
+        let color: Color = storageUsedFraction > 0.9 ? .red : storageUsedFraction > 0.7 ? .orange : .blue
         return LinearGradient(colors: [color.opacity(0.7), color], startPoint: .leading, endPoint: .trailing)
     }
 
-    private var iconName: String {
+    private func iconName(_ disk: ExternalDisk) -> String {
         switch disk.status {
-        case .mounted:              return "externaldrive.fill.badge.checkmark"
-        case .readOnly:             return "externaldrive.badge.minus"
-        case .error:                return "externaldrive.badge.xmark"
+        case .mounted:                          return "externaldrive.fill.badge.checkmark"
+        case .readOnly:                         return "externaldrive.badge.minus"
+        case .error:                            return "externaldrive.badge.xmark"
         case .mounting, .unmounting, .ejecting: return "externaldrive.fill"
-        case .detected:             return "externaldrive"
+        case .detected:                         return "externaldrive"
         }
     }
 
-    private var statusColor: Color {
+    private func statusColor(_ disk: ExternalDisk) -> Color {
         switch disk.status {
-        case .mounted:   return .green
-        case .readOnly:  return .orange
-        case .error:     return .red
-        case .ejecting:  return .purple
-        default:         return .secondary
+        case .mounted:  return .green
+        case .readOnly: return .orange
+        case .error:    return .red
+        case .ejecting: return .purple
+        default:        return .secondary
         }
     }
 }

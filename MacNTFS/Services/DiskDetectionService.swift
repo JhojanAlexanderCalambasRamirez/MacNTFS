@@ -186,6 +186,12 @@ final class DiskDetectionService: ObservableObject {
         let isInternal = desc[kDADiskDescriptionDeviceInternalKey as String] as? Bool ?? false
         guard !isInternal else { return }
 
+        // Skip whole-disk entries that have sub-partitions (disk5, not disk5s1).
+        // DA fires appeared for both; without this filter, disk5 + disk5s1 both appear
+        // in the list as two separate entries for the same physical drive.
+        let isLeaf = desc[kDADiskDescriptionMediaLeafKey as String] as? Bool ?? true
+        guard isLeaf else { return }
+
         let bsdName = desc[kDADiskDescriptionMediaBSDNameKey as String] as? String ?? "unknown"
         let volumeName = desc[kDADiskDescriptionVolumeNameKey as String] as? String ?? ""
         let fsType = desc[kDADiskDescriptionVolumeKindKey as String] as? String ?? ""
