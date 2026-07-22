@@ -153,8 +153,17 @@ struct DiskCardView: View {
                     .disabled(diskVM.isMounting)
                 }
 
-                // Unmount button (mounted only)
+                // Open in Finder + Unmount (mounted only)
                 if disk.status == .mounted {
+                    if let mp = disk.mountPoint {
+                        CardActionButton(
+                            icon: "folder.fill",
+                            label: loc.language == .spanish ? "Finder" : "Finder",
+                            color: .blue
+                        ) {
+                            NSWorkspace.shared.open(URL(fileURLWithPath: mp))
+                        }
+                    }
                     CardActionButton(
                         icon: "arrow.uturn.backward",
                         label: loc.t("unmount"),

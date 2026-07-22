@@ -62,6 +62,14 @@ struct FileManagerView: View {
                 Text("\(filteredContents.count) \(loc.t("items"))")
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
+
+                Button {
+                    NSWorkspace.shared.open(URL(fileURLWithPath: vm.currentPath))
+                } label: {
+                    Image(systemName: "folder.badge.person.crop")
+                }
+                .buttonStyle(.borderless)
+                .help(loc.t("open.finder"))
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
