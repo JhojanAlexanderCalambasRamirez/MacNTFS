@@ -38,13 +38,15 @@ MacNTFS re-mounts NTFS drives with full write support using `ntfs-3g` and `FUSE-
 | **Auto-detection on launch** | Detects already-connected drives when the app opens — no plug/unplug required |
 | **NTFS identification** | Identifies filesystem type and highlights NTFS drives with visual status |
 | **One-click R/W mount** | Re-mounts NTFS drives with full write support via ntfs-3g + FUSE-T |
+| **Open in Finder** | Opens the mounted drive directly in Finder from the file browser or disk card |
 | **Safe Eject** | Ejects any external drive safely from the app — bypasses Finder's missing eject button for NFS-mounted volumes |
+| **Disk Format (Erase)** | Completely erase and reformat a drive as NTFS, ExFAT, or FAT32 — with confirmation dialog to prevent accidental data loss |
+| **Real storage usage** | Shows actual used/free space on mounted drives with a color-coded bar (blue → orange >70% → red >90%) |
 | **Stable mount state** | Tolerant of macOS DiskArbitration cycling — mounted status persists across app restarts |
 | **Native notifications** | macOS notifications when drives connect or disconnect |
 | **Live logs** | Real-time operation log panel with copy-to-clipboard |
 | **Dark mode** | Full support for System, Light, and Dark themes |
 | **Bilingual** | English and Spanish interface with instant language switching |
-| **Storage indicator** | Visual bar showing drive capacity at a glance |
 | **Status bar** | Persistent bottom bar showing disk count, NTFS count, and mount status |
 
 ### How It Works
@@ -163,12 +165,15 @@ ALL ALL=(ALL) NOPASSWD: /usr/sbin/diskutil
 ALL ALL=(ALL) NOPASSWD: /bin/mkdir
 ALL ALL=(ALL) NOPASSWD: /opt/homebrew/bin/ntfs-3g
 ALL ALL=(ALL) NOPASSWD: /sbin/umount
+ALL ALL=(ALL) NOPASSWD: /opt/homebrew/sbin/mkntfs
 EOF
 sudo chmod 440 /etc/sudoers.d/ntfs3g
 sudo visudo -c && echo "sudoers OK"
 ```
 
-> **Security note:** These entries allow any admin user on this Mac to run those five specific binaries as root without a password. They are scoped to exact paths — no wildcard commands.
+> **Security note:** These entries allow any admin user on this Mac to run those six specific binaries as root without a password. They are scoped to exact paths — no wildcard commands.
+>
+> `mkntfs` is required only for the **Format Disk → NTFS** option. ExFAT and FAT32 formatting only use `diskutil` (already in the list).
 
 #### Step 5 — Grant Full Disk Access to MacNTFS
 
@@ -272,6 +277,15 @@ FUSE-T mounts appear as NFS volumes. Open Finder → Go → Go to Folder → typ
 **Finder doesn't show an Eject button for the drive**
 Expected — FUSE-T mounts are NFS loopback volumes; Finder may not list them in the sidebar. Use **Safely Eject** in MacNTFS (right-click the disk card or the Eject button in the detail panel).
 
+**"Format Disk → NTFS" fails with "mkntfs not found"**
+Re-run `setup.sh` — it adds `/opt/homebrew/sbin/mkntfs` to sudoers. Alternatively, add it manually (see Step 4). ExFAT and FAT32 do not require mkntfs and work immediately.
+
+**"Format Disk" button not visible**
+The button only appears when the disk is **not mounted**. Unmount the drive first (Unmount button or toolbar), then select the disk to see the Format option.
+
+**Storage bar shows no usage after mounting**
+The bar queries the filesystem on mount. If it stays empty, verify Full Disk Access is granted and the mount point is accessible at `/Volumes/DRIVENAME`.
+
 ---
 
 ## Español
@@ -293,13 +307,15 @@ MacNTFS re-monta discos NTFS con soporte completo de escritura usando `ntfs-3g` 
 | **Detección al abrir la app** | Detecta discos ya conectados al abrir la app — sin necesidad de desconectar y reconectar |
 | **Identificación NTFS** | Identifica el tipo de sistema de archivos y resalta discos NTFS con estado visual |
 | **Montaje R/W con un clic** | Re-monta discos NTFS con soporte completo de escritura vía ntfs-3g + FUSE-T |
+| **Abrir en Finder** | Abre el disco montado directamente en Finder desde el explorador de archivos o tarjeta de disco |
 | **Expulsión segura** | Expulsa cualquier disco externo de forma segura desde la app — soluciona el problema de Finder que no muestra el botón de expulsión para volúmenes NFS |
+| **Formatear disco (Borrar)** | Borra y reformatea un disco completamente como NTFS, ExFAT o FAT32 — con diálogo de confirmación para evitar pérdida accidental de datos |
+| **Capacidad real** | Muestra el espacio usado/libre real en discos montados con barra con color dinámico (azul → naranja >70% → rojo >90%) |
 | **Estado estable** | Tolerante al ciclo de DiskArbitration — el estado "montado" persiste entre reinicios de la app |
 | **Notificaciones nativas** | Notificaciones de macOS al conectar o desconectar discos |
 | **Logs en tiempo real** | Panel de registro con botón de copiar al portapapeles |
 | **Modo oscuro** | Soporte completo para temas Sistema, Claro y Oscuro |
 | **Bilingüe** | Interfaz en inglés y español con cambio de idioma instantáneo |
-| **Indicador de almacenamiento** | Barra visual mostrando la capacidad del disco |
 | **Barra de estado** | Barra inferior persistente con conteo de discos y estado de montaje |
 
 ### Cómo Funciona
@@ -418,12 +434,15 @@ ALL ALL=(ALL) NOPASSWD: /usr/sbin/diskutil
 ALL ALL=(ALL) NOPASSWD: /bin/mkdir
 ALL ALL=(ALL) NOPASSWD: /opt/homebrew/bin/ntfs-3g
 ALL ALL=(ALL) NOPASSWD: /sbin/umount
+ALL ALL=(ALL) NOPASSWD: /opt/homebrew/sbin/mkntfs
 EOF
 sudo chmod 440 /etc/sudoers.d/ntfs3g
 sudo visudo -c && echo "sudoers OK"
 ```
 
-> **Nota de seguridad:** Estas entradas permiten a cualquier usuario admin en este Mac ejecutar esos cinco binarios específicos como root sin contraseña. Están limitadas a rutas exactas — sin comandos con wildcard.
+> **Nota de seguridad:** Estas entradas permiten a cualquier usuario admin en este Mac ejecutar esos seis binarios específicos como root sin contraseña. Están limitadas a rutas exactas — sin comandos con wildcard.
+>
+> `mkntfs` solo se requiere para la opción **Formatear Disco → NTFS**. Los formatos ExFAT y FAT32 solo usan `diskutil` (ya incluido en la lista).
 
 #### Paso 5 — Otorgar Acceso Total al Disco a MacNTFS
 
@@ -498,6 +517,15 @@ FUSE-T monta como volúmenes NFS. Abrir Finder → Ir → Ir a la carpeta → es
 
 **Finder no muestra el botón de expulsión para el disco**
 Es normal — FUSE-T monta volúmenes NFS loopback que Finder puede no listar en la barra lateral. Usar **Expulsar de forma segura** en MacNTFS (click derecho en el disco o botón Expulsar en el panel de detalle).
+
+**"Formatear Disco → NTFS" falla con "mkntfs not found"**
+Volver a ejecutar `setup.sh` — agrega `/opt/homebrew/sbin/mkntfs` al sudoers. O agregarlo manualmente (ver Paso 4). ExFAT y FAT32 no requieren mkntfs y funcionan de inmediato.
+
+**El botón "Formatear Disco" no aparece**
+El botón solo se muestra cuando el disco **no está montado**. Desmontar primero (botón Desmontar o barra de herramientas) y luego seleccionar el disco para ver la opción de formateo.
+
+**La barra de almacenamiento no muestra uso después de montar**
+La barra consulta el sistema de archivos al montar. Si sigue vacía, verificar que Acceso Total al Disco esté concedido y que el punto de montaje sea accesible en `/Volumes/NOMBRE_DISCO`.
 
 ---
 
