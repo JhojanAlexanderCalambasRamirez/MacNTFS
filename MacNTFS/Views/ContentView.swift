@@ -144,6 +144,7 @@ struct DiskDetailView: View {
     let disk: ExternalDisk
     @EnvironmentObject var diskVM: DiskViewModel
     @EnvironmentObject var loc: LocalizationManager
+    @State private var showingFormatSheet = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -203,11 +204,22 @@ struct DiskDetailView: View {
                 .controlSize(.large)
                 .disabled(diskVM.isMounting)
 
+                Button {
+                    showingFormatSheet = true
+                } label: {
+                    Label(loc.t("format"), systemImage: "trash.circle")
+                        .frame(minWidth: 200)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .foregroundColor(.red)
+                .disabled(diskVM.isMounting)
+
                 if diskVM.isMounting {
                     HStack(spacing: 6) {
                         ProgressView()
                             .scaleEffect(0.7)
-                        Text(disk.status == .ejecting ? loc.t("ejecting") : loc.t("mounting"))
+                        Text(disk.status == .mounting ? loc.t("formatting") : (disk.status == .ejecting ? loc.t("ejecting") : loc.t("mounting")))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -229,6 +241,96 @@ struct DiskDetailView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .sheet(isPresented: $showingFormatSheet) {
+            FormatDiskSheet(disk: disk)
+                .environmentObject(diskVM)
+                .environmentObject(loc)
+        }
+    }
+}
+
+// MARK: - Format Disk Sheet
+
+struct FormatDiskSheet: View {
+    let disk: ExternalDisk
+    @EnvironmentObject var diskVM: DiskViewModel
+    @EnvironmentObject var loc: LocalizationManager
+    @Environment(\.dismiss) private var dismiss
+    @State private var label: String = ""
+    @State private var format: FormatType = .ntfs
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 40))
+                .foregroundColor(.red)
+
+            Text(loc.t("format"))
+                .font(.title2.bold())
+
+            Text(loc.t("format.warning"))
+                .font(.subheadline.bold())
+                .foregroundColor(.red)
+
+            Text(loc.t("format.warning.desc"))
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 300)
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text(loc.t("format.label"))
+                        .font(.subheadline)
+                        .frame(width: 100, alignment: .trailing)
+                    TextField(disk.name, text: $label)
+                        .textFieldStyle(.roundedBorder)
+                }
+
+                HStack {
+                    Text(loc.t("format.type"))
+                        .font(.subheadline)
+                        .frame(width: 100, alignment: .trailing)
+                    Picker("", selection: $format) {
+                        ForEach(FormatType.allCases, id: \.self) { f in
+                            Text(f.rawValue).tag(f)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+            }
+            .padding(.horizontal)
+
+            if diskVM.isMounting {
+                HStack(spacing: 8) {
+                    ProgressView().scaleEffect(0.75)
+                    Text(loc.t("formatting")).font(.caption).foregroundColor(.secondary)
+                }
+            }
+
+            HStack(spacing: 12) {
+                Button(loc.t("cancel")) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                    .disabled(diskVM.isMounting)
+
+                Button(role: .destructive) {
+                    let name = label.isEmpty ? disk.name : label
+                    Task {
+                        await diskVM.formatDisk(disk, label: name, format: format)
+                        if diskVM.errorMessage == nil { dismiss() }
+                    }
+                } label: {
+                    Text(loc.t("format.erase"))
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(diskVM.isMounting)
+            }
+        }
+        .padding(28)
+        .frame(width: 400)
+        .onAppear { label = disk.name }
     }
 }
 

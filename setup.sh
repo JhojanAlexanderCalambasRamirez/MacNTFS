@@ -132,7 +132,10 @@ fi
 SUDOERS_FILE="/etc/sudoers.d/ntfs3g"
 SUDOERS_OK=true
 
-for bin in /usr/bin/pkill /usr/sbin/diskutil /bin/mkdir "$NTFS3G_BIN" /sbin/umount; do
+MKNTFS_BIN="/opt/homebrew/sbin/mkntfs"
+[[ ! -f "$MKNTFS_BIN" ]] && MKNTFS_BIN="/usr/local/sbin/mkntfs"
+
+for bin in /usr/bin/pkill /usr/sbin/diskutil /bin/mkdir "$NTFS3G_BIN" /sbin/umount "$MKNTFS_BIN"; do
     if ! sudo grep -q "NOPASSWD: $bin" "$SUDOERS_FILE" 2>/dev/null; then
         SUDOERS_OK=false
         break
@@ -150,6 +153,7 @@ ALL ALL=(ALL) NOPASSWD: /usr/sbin/diskutil
 ALL ALL=(ALL) NOPASSWD: /bin/mkdir
 ALL ALL=(ALL) NOPASSWD: $NTFS3G_BIN
 ALL ALL=(ALL) NOPASSWD: /sbin/umount
+ALL ALL=(ALL) NOPASSWD: $MKNTFS_BIN
 SUDOEOF
     sudo chmod 440 "$SUDOERS_FILE"
     sudo visudo -c &>/dev/null && echo -e "${GREEN}✓${NC} sudoers configured" || {
@@ -219,8 +223,8 @@ echo ""
 read -p "Install MacNTFS.app to /Applications? [y/N] " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    rm -rf /Applications/MacNTFS.app
-    cp -R "$APP_PATH" /Applications/MacNTFS.app
+    sudo rm -rf /Applications/MacNTFS.app
+    sudo cp -R "$APP_PATH" /Applications/MacNTFS.app
     INSTALLED_PATH="/Applications/MacNTFS.app"
     echo -e "${GREEN}✓${NC} Installed to /Applications/MacNTFS.app"
 else

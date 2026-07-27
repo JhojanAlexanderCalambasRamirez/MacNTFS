@@ -1,5 +1,11 @@
 import Foundation
 
+enum FormatType: String, CaseIterable, Sendable {
+    case ntfs = "NTFS"
+    case exfat = "ExFAT"
+    case fat32 = "FAT32"
+}
+
 actor NTFSMountService {
     static let shared = NTFSMountService()
 
@@ -102,6 +108,50 @@ actor NTFSMountService {
             throw NTFSError.operationFailed(output.isEmpty ? "diskutil eject exited \(code)" : output)
         }
         LogService.shared.log(.info, "Ejected \(disk.name) (\(parent))")
+    }
+
+    func format(disk: ExternalDisk, label: String, format: FormatType) async throws {
+        let parent = parentBSDName(disk.id)
+        // Tear down any existing mount
+        if let mp = disk.mountPoint {
+            _ = await sudo("/sbin/umount", ["-f", mp])
+        }
+        _ = await sudo("/usr/bin/pkill", ["-9", "-f", "ntfs-3g.*\(disk.devicePath)"])
+        try await Task.sleep(nanoseconds: 500_000_000)
+        _ = await sudo("/usr/sbin/diskutil", ["unmountDisk", "force", parent])
+        try await Task.sleep(nanoseconds: 500_000_000)
+
+        // FAT32/exFAT labels max 11 chars; truncate for safety across all formats
+        let safeLabel = String(label.prefix(11)).isEmpty ? "UNTITLED" : String(label.prefix(11))
+
+        switch format {
+        case .ntfs:
+            guard let mkntfs = findMkntfs() else {
+                throw NTFSError.operationFailed("mkntfs not found. Re-run setup.sh to add /opt/homebrew/sbin/mkntfs to sudoers, then retry.")
+            }
+            // Create GPT partition table with a temp ExFAT partition, then overwrite with NTFS
+            let (c1, o1) = await sudo("/usr/sbin/diskutil", ["eraseDisk", "ExFAT", safeLabel, "GPTFormat", parent])
+            if c1 != 0 { throw NTFSError.operationFailed(o1.isEmpty ? "eraseDisk failed (\(c1))" : o1) }
+            try await Task.sleep(nanoseconds: 2_000_000_000)
+            let (c2, o2) = await sudo(mkntfs, ["--fast", "-L", safeLabel, "/dev/\(parent)s1"])
+            if c2 != 0 { throw NTFSError.operationFailed(o2.isEmpty ? "mkntfs failed (\(c2))" : o2) }
+            LogService.shared.log(.info, "Formatted \(parent) as NTFS label=\(safeLabel)")
+
+        case .exfat:
+            let (c, o) = await sudo("/usr/sbin/diskutil", ["eraseDisk", "ExFAT", safeLabel, "GPTFormat", parent])
+            if c != 0 { throw NTFSError.operationFailed(o.isEmpty ? "eraseDisk failed (\(c))" : o) }
+            LogService.shared.log(.info, "Formatted \(parent) as ExFAT label=\(safeLabel)")
+
+        case .fat32:
+            let (c, o) = await sudo("/usr/sbin/diskutil", ["eraseDisk", "MS-DOS", safeLabel, "MBRFormat", parent])
+            if c != 0 { throw NTFSError.operationFailed(o.isEmpty ? "eraseDisk failed (\(c))" : o) }
+            LogService.shared.log(.info, "Formatted \(parent) as FAT32 label=\(safeLabel)")
+        }
+    }
+
+    private func findMkntfs() -> String? {
+        let paths = ["/opt/homebrew/sbin/mkntfs", "/usr/local/sbin/mkntfs", "/opt/homebrew/bin/mkntfs"]
+        return paths.first { FileManager.default.fileExists(atPath: $0) }
     }
 
     private func parentBSDName(_ bsdName: String) -> String {

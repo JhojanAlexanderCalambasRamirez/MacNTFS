@@ -71,6 +71,13 @@ final class LocalizationManager: ObservableObject {
             "ejecting": "Ejecting...",
             "close": "Close",
             "new.name": "New name",
+            "format": "Format Disk",
+            "format.label": "Volume Name",
+            "format.type": "Format As",
+            "format.erase": "Erase and Format",
+            "formatting": "Formatting...",
+            "format.warning": "ALL DATA WILL BE LOST",
+            "format.warning.desc": "This will permanently erase all files on this disk. This cannot be undone.",
         ],
         .spanish: [
             "app.title": "MacNTFS",
@@ -120,6 +127,13 @@ final class LocalizationManager: ObservableObject {
             "ejecting": "Expulsando...",
             "close": "Cerrar",
             "new.name": "Nuevo nombre",
+            "format": "Formatear Disco",
+            "format.label": "Nombre del Volumen",
+            "format.type": "Formatear Como",
+            "format.erase": "Borrar y Formatear",
+            "formatting": "Formateando...",
+            "format.warning": "TODOS LOS DATOS SE PERDERÁN",
+            "format.warning.desc": "Esto borrará permanentemente todos los archivos de este disco. No se puede deshacer.",
         ],
     ]
 }

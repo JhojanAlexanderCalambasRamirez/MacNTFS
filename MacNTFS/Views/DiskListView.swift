@@ -111,37 +111,7 @@ struct DiskCardView: View {
             }
 
             // Row 2: storage bar + size + status
-            VStack(alignment: .leading, spacing: 3) {
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(Color.secondary.opacity(0.13))
-                            .frame(height: 5)
-
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(storageBarColor(disk))
-                            .frame(width: max(0, geo.size.width * storageUsedFraction), height: 5)
-                    }
-                }
-                .frame(height: 5)
-
-                HStack {
-                    Text(disk.sizeFormatted)
-                        .font(.system(size: 10))
-                        .foregroundColor(.secondary)
-
-                    Spacer()
-
-                    HStack(spacing: 3) {
-                        Circle()
-                            .fill(statusColor(disk))
-                            .frame(width: 5, height: 5)
-                        Text(disk.status.rawValue)
-                            .font(.system(size: 10))
-                            .foregroundColor(statusColor(disk))
-                    }
-                }
-            }
+            DiskStorageBar(disk: disk)
         }
         .padding(.vertical, 5)
     }
@@ -194,13 +164,6 @@ struct DiskCardView: View {
 
     // MARK: - Helpers
 
-    private var storageUsedFraction: CGFloat { 0.65 }
-
-    private func storageBarColor(_ disk: ExternalDisk) -> LinearGradient {
-        let color: Color = storageUsedFraction > 0.9 ? .red : storageUsedFraction > 0.7 ? .orange : .blue
-        return LinearGradient(colors: [color.opacity(0.7), color], startPoint: .leading, endPoint: .trailing)
-    }
-
     private func iconName(_ disk: ExternalDisk) -> String {
         switch disk.status {
         case .mounted:                          return "externaldrive.fill.badge.checkmark"
@@ -212,6 +175,81 @@ struct DiskCardView: View {
     }
 
     private func statusColor(_ disk: ExternalDisk) -> Color {
+        switch disk.status {
+        case .mounted:  return .green
+        case .readOnly: return .orange
+        case .error:    return .red
+        case .ejecting: return .purple
+        default:        return .secondary
+        }
+    }
+}
+
+// MARK: - Disk Storage Bar
+
+struct DiskStorageBar: View {
+    let disk: ExternalDisk
+    @State private var usedFraction: Double = 0
+    @State private var usedText: String = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.secondary.opacity(0.13))
+                        .frame(height: 5)
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(barGradient)
+                        .frame(width: max(0, geo.size.width * usedFraction), height: 5)
+                }
+            }
+            .frame(height: 5)
+
+            HStack {
+                Text(disk.sizeFormatted)
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+                if !usedText.isEmpty {
+                    Text("· \(usedText) used")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                HStack(spacing: 3) {
+                    Circle()
+                        .fill(statusColor)
+                        .frame(width: 5, height: 5)
+                    Text(disk.status.rawValue)
+                        .font(.system(size: 10))
+                        .foregroundColor(statusColor)
+                }
+            }
+        }
+        .task(id: disk.mountPoint) { await queryUsage() }
+    }
+
+    private func queryUsage() async {
+        guard let mp = disk.mountPoint, disk.status == .mounted else {
+            usedFraction = 0
+            usedText = ""
+            return
+        }
+        guard let attrs = try? FileManager.default.attributesOfFileSystem(forPath: mp),
+              let total = attrs[.systemSize] as? Int64,
+              let free = attrs[.systemFreeSize] as? Int64,
+              total > 0 else { return }
+        let used = total - free
+        usedFraction = Double(used) / Double(total)
+        usedText = ByteCountFormatter.string(fromByteCount: used, countStyle: .file)
+    }
+
+    private var barGradient: LinearGradient {
+        let color: Color = usedFraction > 0.9 ? .red : usedFraction > 0.7 ? .orange : .blue
+        return LinearGradient(colors: [color.opacity(0.7), color], startPoint: .leading, endPoint: .trailing)
+    }
+
+    private var statusColor: Color {
         switch disk.status {
         case .mounted:  return .green
         case .readOnly: return .orange

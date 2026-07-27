@@ -126,6 +126,29 @@ final class DiskViewModel: ObservableObject {
         isMounting = false
     }
 
+    func formatDisk(_ disk: ExternalDisk, label: String, format: FormatType) async {
+        isMounting = true
+        errorMessage = nil
+        diskService.releaseDisk(disk.id)
+
+        if let idx = diskService.disks.firstIndex(where: { $0.id == disk.id }) {
+            diskService.disks[idx].status = .mounting
+        }
+
+        do {
+            try await mountService.format(disk: disk, label: label, format: format)
+            diskService.disks.removeAll { $0.id == disk.id }
+            if selectedDisk?.id == disk.id { selectedDisk = nil }
+        } catch {
+            errorMessage = error.localizedDescription
+            if let idx = diskService.disks.firstIndex(where: { $0.id == disk.id }) {
+                diskService.disks[idx].status = disk.status
+            }
+        }
+
+        isMounting = false
+    }
+
     func checkDependencies() -> Bool {
         let ntfs3gExists = FileManager.default.fileExists(atPath: "/opt/homebrew/bin/ntfs-3g") ||
                            FileManager.default.fileExists(atPath: "/usr/local/bin/ntfs-3g")
