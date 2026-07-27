@@ -80,6 +80,14 @@ macFUSE requires a kernel extension (kext) that **cannot load on macOS 26 Tahoe 
 
 This is a developer/power-user tool. Full setup requires Terminal. Follow each step exactly.
 
+> **Quick install:** `setup.sh` automates Steps 2–6 including ntfs-3g, mkntfs, sudoers, and app build:
+> ```bash
+> git clone https://github.com/JhojanAlexanderCalambasRamirez/MacNTFS.git
+> cd MacNTFS
+> bash setup.sh
+> ```
+> Run manually only if you prefer full control or the script fails at a specific step.
+
 #### Step 1 — Install Homebrew (if not installed)
 
 ```bash
@@ -104,37 +112,16 @@ Verify installation:
 ls /Library/Frameworks/fuse_t.framework && echo "FUSE-T OK"
 ```
 
-#### Step 3 — Build ntfs-3g from source
+#### Step 3 — Install ntfs-3g for FUSE-T
 
-ntfs-3g must be compiled from source and patched to link against `fuse_t.framework` instead of the default `libfuse`. The standard `brew install ntfs-3g` binary links to macFUSE and will not work.
-
-```bash
-# Install build dependencies
-brew install autoconf automake libtool pkg-config
-
-# Clone ntfs-3g source
-git clone https://github.com/tuxera/ntfs-3g.git
-cd ntfs-3g
-
-# Configure and compile against fuse_t.framework
-./autogen.sh
-./configure \
-  CFLAGS="-I/Library/Frameworks/fuse_t.framework/Headers" \
-  LDFLAGS="-F/Library/Frameworks -framework fuse_t" \
-  --disable-ntfsprogs \
-  --disable-crypto
-make -j$(sysctl -n hw.logicalcpu)
-sudo make install
-```
-
-Patch the installed binary to use the correct library path:
+The standard `brew install ntfs-3g` links against macFUSE and will not work. Use the FUSE-T native Homebrew tap instead:
 
 ```bash
-sudo install_name_tool -change \
-  /usr/local/lib/libfuse.2.dylib \
-  /Library/Frameworks/fuse_t.framework/fuse_t \
-  /opt/homebrew/bin/ntfs-3g
+brew tap gromgit/homebrew-fuse
+brew install gromgit/fuse/ntfs-3g-mac
 ```
+
+This installs ntfs-3g already linked to `fuse_t.framework`, plus **mkntfs** (needed for the Format Disk → NTFS feature).
 
 Verify:
 
@@ -143,7 +130,27 @@ otool -L /opt/homebrew/bin/ntfs-3g | grep fuse
 # Should show: /Library/Frameworks/fuse_t.framework/fuse_t
 ```
 
-Test mount (replace `diskXsY` with your actual disk identifier from `diskutil list`):
+**Alternative — build from source** (if the tap is unavailable):
+
+```bash
+brew install autoconf automake libtool pkg-config
+git clone https://github.com/tuxera/ntfs-3g.git && cd ntfs-3g
+./autogen.sh
+./configure \
+  CFLAGS="-I/Library/Frameworks/fuse_t.framework/Headers" \
+  LDFLAGS="-F/Library/Frameworks -framework fuse_t" \
+  --disable-ntfsprogs --disable-crypto
+make -j$(sysctl -n hw.logicalcpu) && sudo make install
+# Patch library path if needed:
+sudo install_name_tool -change \
+  /usr/local/lib/libfuse.2.dylib \
+  /Library/Frameworks/fuse_t.framework/fuse_t \
+  /opt/homebrew/bin/ntfs-3g
+```
+
+> **Note:** The source build with `--disable-ntfsprogs` does not include mkntfs. For Format Disk → NTFS support, install via the Homebrew tap above or run `setup.sh` (which tries the tap first).
+
+Test mount (replace `diskXsY` with your identifier from `diskutil list`):
 
 ```bash
 sudo diskutil unmount force /dev/diskXsY
@@ -349,6 +356,14 @@ macFUSE requiere una extensión de kernel (kext) que **no puede cargar en macOS 
 
 Esta es una herramienta para desarrolladores y usuarios avanzados. La configuración completa requiere Terminal. Sigue cada paso exactamente.
 
+> **Instalación rápida:** `setup.sh` automatiza los Pasos 2–6 incluyendo ntfs-3g, mkntfs, sudoers y compilación de la app:
+> ```bash
+> git clone https://github.com/JhojanAlexanderCalambasRamirez/MacNTFS.git
+> cd MacNTFS
+> bash setup.sh
+> ```
+> Sigue los pasos manualmente solo si prefieres control total o si el script falla en algún paso específico.
+
 #### Paso 1 — Instalar Homebrew (si no está instalado)
 
 ```bash
@@ -373,37 +388,16 @@ Verificar instalación:
 ls /Library/Frameworks/fuse_t.framework && echo "FUSE-T OK"
 ```
 
-#### Paso 3 — Compilar ntfs-3g desde fuente
+#### Paso 3 — Instalar ntfs-3g para FUSE-T
 
-ntfs-3g debe compilarse desde fuente y parchearse para enlazar con `fuse_t.framework` en lugar del `libfuse` por defecto. El binario estándar `brew install ntfs-3g` enlaza con macFUSE y no funcionará.
-
-```bash
-# Instalar dependencias de compilación
-brew install autoconf automake libtool pkg-config
-
-# Clonar fuente ntfs-3g
-git clone https://github.com/tuxera/ntfs-3g.git
-cd ntfs-3g
-
-# Configurar y compilar contra fuse_t.framework
-./autogen.sh
-./configure \
-  CFLAGS="-I/Library/Frameworks/fuse_t.framework/Headers" \
-  LDFLAGS="-F/Library/Frameworks -framework fuse_t" \
-  --disable-ntfsprogs \
-  --disable-crypto
-make -j$(sysctl -n hw.logicalcpu)
-sudo make install
-```
-
-Parchear el binario instalado para usar la ruta de librería correcta:
+El binario estándar `brew install ntfs-3g` enlaza con macFUSE y no funcionará. Usar el tap de Homebrew nativo para FUSE-T:
 
 ```bash
-sudo install_name_tool -change \
-  /usr/local/lib/libfuse.2.dylib \
-  /Library/Frameworks/fuse_t.framework/fuse_t \
-  /opt/homebrew/bin/ntfs-3g
+brew tap gromgit/homebrew-fuse
+brew install gromgit/fuse/ntfs-3g-mac
 ```
+
+Esto instala ntfs-3g ya enlazado con `fuse_t.framework`, más **mkntfs** (necesario para la función Formatear Disco → NTFS).
 
 Verificar:
 
@@ -412,7 +406,27 @@ otool -L /opt/homebrew/bin/ntfs-3g | grep fuse
 # Debe mostrar: /Library/Frameworks/fuse_t.framework/fuse_t
 ```
 
-Prueba de montaje (reemplaza `diskXsY` con tu identificador real de `diskutil list`):
+**Alternativa — compilar desde fuente** (si el tap no está disponible):
+
+```bash
+brew install autoconf automake libtool pkg-config
+git clone https://github.com/tuxera/ntfs-3g.git && cd ntfs-3g
+./autogen.sh
+./configure \
+  CFLAGS="-I/Library/Frameworks/fuse_t.framework/Headers" \
+  LDFLAGS="-F/Library/Frameworks -framework fuse_t" \
+  --disable-ntfsprogs --disable-crypto
+make -j$(sysctl -n hw.logicalcpu) && sudo make install
+# Parchear ruta de librería si es necesario:
+sudo install_name_tool -change \
+  /usr/local/lib/libfuse.2.dylib \
+  /Library/Frameworks/fuse_t.framework/fuse_t \
+  /opt/homebrew/bin/ntfs-3g
+```
+
+> **Nota:** La compilación desde fuente con `--disable-ntfsprogs` no incluye mkntfs. Para el formateo NTFS, instalar vía el tap de Homebrew o ejecutar `setup.sh` (que intenta el tap primero).
+
+Prueba de montaje (reemplaza `diskXsY` con tu identificador de `diskutil list`):
 
 ```bash
 sudo diskutil unmount force /dev/diskXsY

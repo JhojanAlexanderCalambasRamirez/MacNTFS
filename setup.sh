@@ -60,80 +60,90 @@ else
     echo -e "${GREEN}✓${NC} FUSE-T installed"
 fi
 
-# ── 4. Build ntfs-3g from source and patch for FUSE-T ───────────────────────
+# ── 4. Install ntfs-3g for FUSE-T ───────────────────────────────────────────
+# gromgit/fuse/ntfs-3g-mac is a maintained Homebrew formula built specifically
+# for FUSE-T. It also installs mkntfs (needed for disk formatting).
+# Fall back to source build + patch only if the tap formula is unavailable.
 NTFS3G_BIN="/opt/homebrew/bin/ntfs-3g"
-NEEDS_BUILD=false
 
-if [[ ! -f "$NTFS3G_BIN" ]]; then
-    NEEDS_BUILD=true
-else
-    # Check if already linked to fuse_t.framework
-    if ! otool -L "$NTFS3G_BIN" 2>/dev/null | grep -q "fuse_t.framework"; then
-        NEEDS_BUILD=true
-    fi
-fi
+_ntfs3g_ok() {
+    [[ -f "$NTFS3G_BIN" ]] && otool -L "$NTFS3G_BIN" 2>/dev/null | grep -q "fuse_t.framework"
+}
 
-if [[ "$NEEDS_BUILD" == "false" ]]; then
+if _ntfs3g_ok; then
     echo -e "${GREEN}✓${NC} ntfs-3g already built and patched for FUSE-T"
 else
     echo ""
-    echo -e "${YELLOW}Building ntfs-3g from source (this takes ~2 minutes)...${NC}"
+    echo -e "${YELLOW}Installing ntfs-3g (FUSE-T build)...${NC}"
 
-    # Install build dependencies
-    brew install autoconf automake libtool pkg-config 2>/dev/null || true
-    echo -e "${GREEN}✓${NC} Build tools ready"
+    # Try Homebrew tap first — faster, includes mkntfs, already built for FUSE-T
+    brew tap gromgit/homebrew-fuse 2>/dev/null || true
+    brew install gromgit/fuse/ntfs-3g-mac 2>/dev/null || true
 
-    # Clone and build
-    BUILD_DIR="$(mktemp -d)/ntfs-3g-build"
-    git clone --depth=1 https://github.com/tuxera/ntfs-3g.git "$BUILD_DIR"
-    cd "$BUILD_DIR"
+    if _ntfs3g_ok; then
+        echo -e "${GREEN}✓${NC} ntfs-3g installed via Homebrew tap (gromgit/fuse/ntfs-3g-mac)"
+    else
+        # Tap unavailable or didn't link to fuse_t — build from source
+        echo -e "${YELLOW}Tap unavailable, building ntfs-3g from source (~2 minutes)...${NC}"
+        brew install autoconf automake libtool pkg-config 2>/dev/null || true
 
-    ./autogen.sh
-    ./configure \
-        CFLAGS="-I/Library/Frameworks/fuse_t.framework/Headers" \
-        LDFLAGS="-F/Library/Frameworks -framework fuse_t" \
-        --disable-ntfsprogs \
-        --disable-crypto \
-        --quiet
+        BUILD_DIR="$(mktemp -d)/ntfs-3g-build"
+        git clone --depth=1 https://github.com/tuxera/ntfs-3g.git "$BUILD_DIR"
+        cd "$BUILD_DIR"
 
-    make -j"$(sysctl -n hw.logicalcpu)"
-    sudo make install
+        ./autogen.sh
+        ./configure \
+            CFLAGS="-I/Library/Frameworks/fuse_t.framework/Headers" \
+            LDFLAGS="-F/Library/Frameworks -framework fuse_t" \
+            --disable-ntfsprogs \
+            --disable-crypto \
+            --quiet
 
-    cd -
-    rm -rf "$BUILD_DIR"
+        make -j"$(sysctl -n hw.logicalcpu)"
+        sudo make install
 
-    # Patch dynamic library path
-    if [[ -f "$NTFS3G_BIN" ]]; then
-        OLD_LIB=$(otool -L "$NTFS3G_BIN" 2>/dev/null | grep libfuse | awk '{print $1}' | head -1 || true)
-        if [[ -n "$OLD_LIB" ]]; then
-            sudo install_name_tool -change \
-                "$OLD_LIB" \
-                "/Library/Frameworks/fuse_t.framework/fuse_t" \
-                "$NTFS3G_BIN"
-            echo -e "${GREEN}✓${NC} ntfs-3g patched: libfuse → fuse_t.framework"
+        cd -
+        rm -rf "$BUILD_DIR"
+
+        # Patch dynamic library path if needed
+        if [[ -f "$NTFS3G_BIN" ]]; then
+            OLD_LIB=$(otool -L "$NTFS3G_BIN" 2>/dev/null | grep libfuse | awk '{print $1}' | head -1 || true)
+            if [[ -n "$OLD_LIB" ]]; then
+                sudo install_name_tool -change \
+                    "$OLD_LIB" \
+                    "/Library/Frameworks/fuse_t.framework/fuse_t" \
+                    "$NTFS3G_BIN"
+                echo -e "${GREEN}✓${NC} ntfs-3g patched: libfuse → fuse_t.framework"
+            fi
         else
-            echo -e "${GREEN}✓${NC} ntfs-3g built (no libfuse path to patch)"
+            echo -e "${RED}ERROR: ntfs-3g binary not found at $NTFS3G_BIN after build${NC}"
+            exit 1
         fi
-    else
-        echo -e "${RED}ERROR: ntfs-3g build succeeded but binary not found at $NTFS3G_BIN${NC}"
-        exit 1
-    fi
 
-    # Verify
-    if otool -L "$NTFS3G_BIN" 2>/dev/null | grep -q "fuse_t.framework"; then
-        echo -e "${GREEN}✓${NC} ntfs-3g links to fuse_t.framework — verified"
-    else
-        echo -e "${RED}WARNING: Could not confirm fuse_t linkage. Manual verification:${NC}"
-        echo "  otool -L $NTFS3G_BIN | grep fuse"
+        if _ntfs3g_ok; then
+            echo -e "${GREEN}✓${NC} ntfs-3g links to fuse_t.framework — verified"
+        else
+            echo -e "${RED}WARNING: Could not confirm fuse_t linkage. Run: otool -L $NTFS3G_BIN | grep fuse${NC}"
+        fi
     fi
+fi
+
+# ── 4.5 mkntfs (for disk formatting feature) ─────────────────────────────────
+MKNTFS_BIN=""
+for _p in /opt/homebrew/sbin/mkntfs /usr/local/sbin/mkntfs /opt/homebrew/bin/mkntfs; do
+    [[ -f "$_p" ]] && MKNTFS_BIN="$_p" && break
+done
+
+if [[ -n "$MKNTFS_BIN" ]]; then
+    echo -e "${GREEN}✓${NC} mkntfs found at $MKNTFS_BIN"
+else
+    echo -e "${YELLOW}⚠${NC} mkntfs not found — NTFS disk formatting will be unavailable (ExFAT/FAT32 still work)"
+    MKNTFS_BIN="/opt/homebrew/sbin/mkntfs"  # Expected path for sudoers entry
 fi
 
 # ── 5. Configure sudoers (NOPASSWD) ─────────────────────────────────────────
 SUDOERS_FILE="/etc/sudoers.d/ntfs3g"
 SUDOERS_OK=true
-
-MKNTFS_BIN="/opt/homebrew/sbin/mkntfs"
-[[ ! -f "$MKNTFS_BIN" ]] && MKNTFS_BIN="/usr/local/sbin/mkntfs"
 
 for bin in /usr/bin/pkill /usr/sbin/diskutil /bin/mkdir "$NTFS3G_BIN" /sbin/umount "$MKNTFS_BIN"; do
     if ! sudo grep -q "NOPASSWD: $bin" "$SUDOERS_FILE" 2>/dev/null; then
