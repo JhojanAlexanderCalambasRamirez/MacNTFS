@@ -11,6 +11,7 @@ final class DiskViewModel: ObservableObject {
     let diskService = DiskDetectionService()
     private let mountService = NTFSMountService.shared
     private var cancellable: AnyCancellable?
+    private var watchdogTasks: [String: Task<Void, Never>] = [:]
 
     init() {
         cancellable = diskService.objectWillChange
@@ -29,6 +30,16 @@ final class DiskViewModel: ObservableObject {
 
     func startMonitoring() {
         diskService.startMonitoring()
+        // Start watchdog + power assertion for mounts restored from a previous session.
+        // restoreExistingMounts() is async, so wait for it to settle before scanning.
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            guard let self else { return }
+            for disk in self.diskService.disks where disk.status == .mounted {
+                await self.mountService.acquirePowerAssertion()
+                self.startWatchdog(for: disk)
+            }
+        }
     }
 
     func stopMonitoring() {
@@ -71,6 +82,7 @@ final class DiskViewModel: ObservableObject {
             } else {
                 diskService.disks.append(mountedDisk)
             }
+            startWatchdog(for: mountedDisk)
         } catch {
             errorMessage = error.localizedDescription
             if let idx = diskService.disks.firstIndex(where: { $0.id == disk.id }) {
@@ -85,6 +97,7 @@ final class DiskViewModel: ObservableObject {
     func unmountDisk(_ disk: ExternalDisk) async {
         guard let mountPoint = disk.mountPoint else { return }
 
+        stopWatchdog(for: disk.id)
         do {
             // Release DA claim before unmounting so DA can re-detect the partition normally
             diskService.releaseDisk(disk.id)
@@ -104,6 +117,7 @@ final class DiskViewModel: ObservableObject {
     }
 
     func ejectDisk(_ disk: ExternalDisk) async {
+        stopWatchdog(for: disk.id)
         isMounting = true
         errorMessage = nil
         diskService.releaseDisk(disk.id)
@@ -147,6 +161,66 @@ final class DiskViewModel: ObservableObject {
         }
 
         isMounting = false
+    }
+
+    // MARK: - Watchdog
+
+    private func startWatchdog(for disk: ExternalDisk) {
+        stopWatchdog(for: disk.id)
+        let diskId = disk.id
+        let devicePath = disk.devicePath
+        let diskName = disk.name
+
+        watchdogTasks[diskId] = Task.detached { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
+                guard !Task.isCancelled else { break }
+
+                let alive = await self?.checkNTFS3GAlive(devicePath: devicePath) ?? true
+                if !alive {
+                    await MainActor.run { [weak self] in
+                        guard let self else { return }
+                        guard let idx = self.diskService.disks.firstIndex(where: { $0.id == diskId }),
+                              self.diskService.disks[idx].status == .mounted else { return }
+                        let snapshot = self.diskService.disks[idx]
+                        self.diskService.disks[idx].status = .error
+                        if self.selectedDisk?.id == diskId {
+                            self.selectedDisk = self.diskService.disks[idx]
+                        }
+                        self.errorMessage = "'\(diskName)' disconnected unexpectedly. Safely eject and reconnect."
+                        _ = Task { await self.mountService.cleanupCrashedMount(disk: snapshot) }
+                        NotificationService.sendDiskDisconnected(diskName)
+                        LogService.shared.log(.error, "Watchdog: ntfs-3g died for \(diskName) — marked error")
+                    }
+                    break
+                }
+            }
+            await MainActor.run { [weak self] in
+                self?.watchdogTasks.removeValue(forKey: diskId)
+            }
+        }
+    }
+
+    private func stopWatchdog(for diskId: String) {
+        watchdogTasks[diskId]?.cancel()
+        watchdogTasks.removeValue(forKey: diskId)
+    }
+
+    private func checkNTFS3GAlive(devicePath: String) async -> Bool {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .utility).async {
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+                process.arguments = ["-f", "ntfs-3g.*\(devicePath)"]
+                let pipe = Pipe()
+                process.standardOutput = pipe
+                process.standardError = Pipe()
+                try? process.run()
+                process.waitUntilExit()
+                let out = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+                continuation.resume(returning: !out.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
     }
 
     func checkDependencies() -> Bool {

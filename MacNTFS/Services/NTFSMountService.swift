@@ -1,4 +1,5 @@
 import Foundation
+import IOKit.pwr_mgt
 
 enum FormatType: String, CaseIterable, Sendable {
     case ntfs = "NTFS"
@@ -16,6 +17,42 @@ actor NTFSMountService {
     ]
 
     private let mountBase = "/Volumes"
+
+    // IOPMAssertion — prevents disk idle/USB sleep while any NTFS drive is mounted.
+    // Reference-counted: one assertion covers any number of simultaneously mounted disks.
+    private var powerAssertionID: IOPMAssertionID = 0
+    private var mountedDiskCount = 0
+
+    func acquirePowerAssertion() {
+        mountedDiskCount += 1
+        guard mountedDiskCount == 1 else { return }
+        let result = IOPMAssertionCreateWithName(
+            kIOPMAssertPreventDiskIdle as CFString,
+            IOPMAssertionLevel(kIOPMAssertionLevelOn),
+            "MacNTFS: NTFS drive active" as CFString,
+            &powerAssertionID
+        )
+        if result == kIOReturnSuccess {
+            LogService.shared.log(.debug, "IOPMAssertion acquired — disk idle/USB sleep blocked")
+        }
+    }
+
+    func releasePowerAssertion() {
+        mountedDiskCount = max(0, mountedDiskCount - 1)
+        guard mountedDiskCount == 0, powerAssertionID != 0 else { return }
+        IOPMAssertionRelease(powerAssertionID)
+        powerAssertionID = 0
+        LogService.shared.log(.debug, "IOPMAssertion released")
+    }
+
+    func cleanupCrashedMount(disk: ExternalDisk) async {
+        if let mountPoint = disk.mountPoint {
+            _ = await sudo("/sbin/umount", ["-f", mountPoint])
+        }
+        _ = await sudo("/usr/bin/pkill", ["-9", "-f", "ntfs-3g.*\(disk.devicePath)"])
+        releasePowerAssertion()
+        LogService.shared.log(.error, "Crash cleanup: removed stale mount for \(disk.name)")
+    }
 
     func findNTFS3G() -> String? {
         for path in ntfs3gPaths {
@@ -79,11 +116,13 @@ actor NTFSMountService {
         // Prevent Spotlight from indexing — mds holds file handles open causing "folder in use" on delete.
         FileManager.default.createFile(atPath: "\(mountPoint)/.metadata_never_index", contents: nil)
 
+        acquirePowerAssertion()
         LogService.shared.log(.info, "Successfully mounted \(disk.name) at \(mountPoint)")
         return mountPoint
     }
 
     func unmount(mountPoint: String) async throws {
+        releasePowerAssertion()
         let (exitCode, output) = await sudo("/sbin/umount", ["-f", mountPoint])
         if exitCode != 0 {
             let msg = output.isEmpty ? "umount exited \(exitCode)" : output
@@ -94,6 +133,7 @@ actor NTFSMountService {
     }
 
     func eject(disk: ExternalDisk) async throws {
+        releasePowerAssertion()
         // Tear down NFS loopback if mounted by ntfs-3g
         if let mountPoint = disk.mountPoint {
             _ = await sudo("/sbin/umount", ["-f", mountPoint])
