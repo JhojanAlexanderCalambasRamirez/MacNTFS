@@ -140,6 +140,11 @@ final class DiskDetectionService: ObservableObject {
         LogService.shared.log(.info, "Disk monitoring stopped")
     }
 
+    func rescan() {
+        scanExistingDisks()
+        restoreExistingMounts()
+    }
+
     private func scanExistingDisks() {
         Task.detached { [weak self] in
             guard let self else { return }

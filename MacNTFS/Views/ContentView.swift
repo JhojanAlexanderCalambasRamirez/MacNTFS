@@ -46,6 +46,18 @@ struct ContentView: View {
                         Divider()
                     }
 
+                    Button {
+                        Task { await diskVM.rescanDisks() }
+                    } label: {
+                        if diskVM.isScanning {
+                            ProgressView().scaleEffect(0.6).frame(width: 16, height: 16)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                    }
+                    .help(loc.language == .spanish ? "Actualizar discos" : "Refresh drives")
+                    .disabled(diskVM.isScanning)
+
                     Button { showingSettings.toggle() } label: {
                         Image(systemName: "gearshape")
                     }

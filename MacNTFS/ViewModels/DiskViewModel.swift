@@ -6,6 +6,7 @@ import Combine
 final class DiskViewModel: ObservableObject {
     @Published var selectedDisk: ExternalDisk?
     @Published var isMounting = false
+    @Published var isScanning = false
     @Published var errorMessage: String?
 
     let diskService = DiskDetectionService()
@@ -44,6 +45,13 @@ final class DiskViewModel: ObservableObject {
 
     func stopMonitoring() {
         diskService.stopMonitoring()
+    }
+
+    func rescanDisks() async {
+        isScanning = true
+        diskService.rescan()
+        try? await Task.sleep(nanoseconds: 1_500_000_000)
+        isScanning = false
     }
 
     func mountWithWriteSupport(_ disk: ExternalDisk) async {
