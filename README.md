@@ -42,8 +42,10 @@ MacNTFS re-mounts NTFS drives with full write support using `ntfs-3g` and `FUSE-
 | **Safe Eject** | Ejects any external drive safely from the app — bypasses Finder's missing eject button for NFS-mounted volumes |
 | **Disk Format (Erase)** | Completely erase and reformat a drive as NTFS, ExFAT, or FAT32 — with confirmation dialog to prevent accidental data loss |
 | **Real storage usage** | Shows actual used/free space on mounted drives with a color-coded bar (blue → orange >70% → red >90%) |
+| **Refresh drives** | Manually rescan all connected disks without restarting the app — toolbar button with live spinner |
+| **Transfer stability** | IOPMAssertion prevents USB disk idle/sleep during transfers; ntfs-3g watchdog detects crashes and cleans up stale mounts automatically |
 | **Stable mount state** | Tolerant of macOS DiskArbitration cycling — mounted status persists across app restarts |
-| **Native notifications** | macOS notifications when drives connect or disconnect |
+| **Native notifications** | macOS notifications when drives connect, disconnect, or drop unexpectedly |
 | **Live logs** | Real-time operation log panel with copy-to-clipboard |
 | **Dark mode** | Full support for System, Light, and Dark themes |
 | **Bilingual** | English and Spanish interface with instant language switching |
@@ -318,8 +320,10 @@ MacNTFS re-monta discos NTFS con soporte completo de escritura usando `ntfs-3g` 
 | **Expulsión segura** | Expulsa cualquier disco externo de forma segura desde la app — soluciona el problema de Finder que no muestra el botón de expulsión para volúmenes NFS |
 | **Formatear disco (Borrar)** | Borra y reformatea un disco completamente como NTFS, ExFAT o FAT32 — con diálogo de confirmación para evitar pérdida accidental de datos |
 | **Capacidad real** | Muestra el espacio usado/libre real en discos montados con barra con color dinámico (azul → naranja >70% → rojo >90%) |
+| **Actualizar discos** | Botón de refresco en la barra de herramientas para reescanear discos conectados sin reiniciar la app |
+| **Estabilidad en transferencias** | IOPMAssertion previene el apagado USB durante transferencias; watchdog de ntfs-3g detecta crashes y limpia montajes obsoletos automáticamente |
 | **Estado estable** | Tolerante al ciclo de DiskArbitration — el estado "montado" persiste entre reinicios de la app |
-| **Notificaciones nativas** | Notificaciones de macOS al conectar o desconectar discos |
+| **Notificaciones nativas** | Notificaciones de macOS al conectar, desconectar o cuando un disco se desconecta inesperadamente |
 | **Logs en tiempo real** | Panel de registro con botón de copiar al portapapeles |
 | **Modo oscuro** | Soporte completo para temas Sistema, Claro y Oscuro |
 | **Bilingüe** | Interfaz en inglés y español con cambio de idioma instantáneo |
